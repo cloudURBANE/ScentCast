@@ -135,22 +135,14 @@ export default function App() {
             <h1 className="font-serif text-2xl italic tracking-tighter uppercase">Scent Cast</h1>
           </div>
           <div className="ml-auto">
-            {locationStatus !== 'granted' && (
-              <button
-                onClick={requestLocation}
-                disabled={locationStatus === 'requesting'}
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-all text-[11px] uppercase tracking-[0.2em] font-sans font-medium disabled:opacity-40"
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/30'}`} />
-                {locationStatus === 'requesting' ? 'Locating...' : locationStatus === 'denied' ? 'Location Denied' : 'Sync Location'}
-              </button>
-            )}
-            {locationStatus === 'granted' && (
-              <div className="flex items-center gap-2 px-4 py-2 text-[11px] uppercase tracking-[0.2em] font-sans font-medium text-white/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                Location Active
-              </div>
-            )}
+            <button
+              onClick={requestLocation}
+              disabled={locationStatus === 'requesting' || locationStatus === 'granted'}
+              title={locationStatus === 'granted' ? 'Location Active' : locationStatus === 'denied' ? 'Location Denied' : 'Sync Location'}
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/30 transition-all disabled:cursor-default"
+            >
+              <span className={`w-2 h-2 rounded-full ${locationStatus === 'granted' ? 'bg-green-400' : locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/20'}`} />
+            </button>
           </div>
         </div>
       </nav>
