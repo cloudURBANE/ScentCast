@@ -61,6 +61,10 @@ Required for the API:
   GOOGLE_CLIENT_SECRET       = (OAuth secret)
   AI_INTEGRATIONS_GEMINI_*   = production Gemini URLs/keys if you use them
 
+Common mistakes:
+  • API_PUBLIC_URL on Render accidentally still http://localhost:8080 (must be https://YOUR-SERVICE.onrender.com).
+  • CORS_ORIGIN / PUBLIC_APP_URL still localhost — must be your live Vercel URL in production.
+
 Do NOT set on Render (unless you really need it):
   DATABASE_SSL_REJECT_UNAUTHORIZED=false
 

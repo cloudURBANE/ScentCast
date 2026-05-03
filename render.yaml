@@ -1,7 +1,13 @@
-# Render Blueprint: Dashboard → New → Blueprint → select this repo → apply (creates the Web Service below).
-# Database: use your existing Supabase Postgres — do NOT add “Postgres on Render” unless you want a second DB.
-# After first deploy, copy the service URL (e.g. https://scent-cast-api.onrender.com) into:
-#   Render env: API_PUBLIC_URL, CORS_ORIGIN + Vercel: VITE_API_ORIGIN, VITE_OAUTH_ORIGIN
+# Render Blueprint: New → Blueprint → connect repo → apply.
+# Secrets stay in Render’s Environment tab (never commit `.env`; never use localhost URLs in Production).
+#
+# After deploy set (examples): DATABASE_URL, GOOGLE_CLIENT_*, GEMINI_* as needed:
+#   API_PUBLIC_URL = https://<this-service>.onrender.com           # origin ONLY (no /api/...path)
+#   PUBLIC_APP_URL = https://<your-app>.vercel.app
+#   CORS_ORIGIN    = https://<your-app>.vercel.app
+# Then on Vercel Production: VITE_API_ORIGIN = same as API_PUBLIC_URL; redeploy the site.
+#
+# Database: use Supabase Postgres (or Neon)—skip “Postgres on Render” unless you want a second DB.
 services:
   - type: web
     name: scent-cast-api
