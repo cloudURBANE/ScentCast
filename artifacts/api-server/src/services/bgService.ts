@@ -27,64 +27,122 @@ async function trimWhiteAndNormalize(buffer: Buffer): Promise<Buffer> {
   }
 }
 
+async function callRemoveBgWithFile(buffer: Buffer, apiKey: string): Promise<Buffer | null> {
+  try {
+    const FormData = (await import("form-data")).default;
+    const formData = new FormData();
+    formData.append("image_file", buffer, { filename: "image.jpg", contentType: "image/jpeg" });
+    formData.append("size", "auto");
+    formData.append("type", "product");
+    formData.append("format", "png");
+
+    const response = await axios.post("https://api.remove.bg/v1.0/removebg", formData, {
+      headers: { ...formData.getHeaders(), "X-Api-Key": apiKey },
+      responseType: "arraybuffer",
+      timeout: 25000,
+      validateStatus: (s) => s < 500,
+    });
+
+    if (response.status === 200) return Buffer.from(response.data);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function callRemoveBgWithUrl(imageUrl: string, apiKey: string): Promise<Buffer | null> {
+  try {
+    const FormData = (await import("form-data")).default;
+    const formData = new FormData();
+    formData.append("image_url", imageUrl);
+    formData.append("size", "auto");
+    formData.append("type", "product");
+    formData.append("format", "png");
+
+    const response = await axios.post("https://api.remove.bg/v1.0/removebg", formData, {
+      headers: { ...formData.getHeaders(), "X-Api-Key": apiKey },
+      responseType: "arraybuffer",
+      timeout: 25000,
+      validateStatus: (s) => s < 500,
+    });
+
+    if (response.status === 200) return Buffer.from(response.data);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function removeBg(input: string, isUrl = false) {
   const apiKey = process.env.REMOVE_BG_API_KEY;
   const toDataUri = (buffer: Buffer, type = "image/png") =>
     `data:${type};base64,${buffer.toString("base64")}`;
 
-  let rawBuffer: Buffer;
+  if (!isUrl || !input.startsWith("http")) {
+    if (input.startsWith("data:")) {
+      const parts = input.split(",");
+      const raw = Buffer.from(parts[1], "base64");
+      if (!apiKey) {
+        const normalized = await trimWhiteAndNormalize(raw);
+        return { cleanImage: toDataUri(normalized) };
+      }
+      const result = await callRemoveBgWithFile(raw, apiKey);
+      if (result) {
+        const padded = await padAndCenter(result);
+        return { cleanImage: toDataUri(padded) };
+      }
+      const normalized = await trimWhiteAndNormalize(raw);
+      return { cleanImage: toDataUri(normalized) };
+    }
+    return { cleanImage: input };
+  }
 
-  try {
-    if (isUrl && input.startsWith("http")) {
+  if (!apiKey) {
+    // No API key — try to download and trim white background locally
+    try {
       const res = await axios.get(input, {
         responseType: "arraybuffer",
         timeout: 8000,
         headers: { "User-Agent": "Mozilla/5.0" },
       });
-      rawBuffer = Buffer.from(res.data);
-    } else if (isUrl && input.startsWith("data:")) {
-      const parts = input.split(",");
-      rawBuffer = Buffer.from(parts[1], "base64");
-    } else {
+      const normalized = await trimWhiteAndNormalize(Buffer.from(res.data));
+      return { cleanImage: toDataUri(normalized) };
+    } catch {
       return { cleanImage: input };
     }
+  }
+
+  // Strategy 1: Try sending URL directly to remove.bg (works when CDN allows it)
+  const byUrl = await callRemoveBgWithUrl(input, apiKey);
+  if (byUrl) {
+    const padded = await padAndCenter(byUrl);
+    return { cleanImage: toDataUri(padded) };
+  }
+
+  // Strategy 2: Download the image ourselves and send as file
+  let rawBuffer: Buffer | null = null;
+  try {
+    const res = await axios.get(input, {
+      responseType: "arraybuffer",
+      timeout: 8000,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://www.google.com/",
+      },
+    });
+    rawBuffer = Buffer.from(res.data);
   } catch {
+    // can't download — return original URL as-is
     return { cleanImage: input };
   }
 
-  if (!apiKey) {
-    const normalized = await trimWhiteAndNormalize(rawBuffer);
-    return { cleanImage: toDataUri(normalized) };
-  }
-
-  try {
-    const FormData = (await import("form-data")).default;
-    const formData = new FormData();
-    formData.append("image_file", rawBuffer, "image.jpg");
-    formData.append("size", "auto");
-    formData.append("type", "product");
-    formData.append("format", "png");
-
-    const response = await axios.post(
-      "https://api.remove.bg/v1.0/removebg",
-      formData,
-      {
-        headers: { ...formData.getHeaders(), "X-Api-Key": apiKey },
-        responseType: "arraybuffer",
-        timeout: 25000,
-        validateStatus: (status) => status < 500,
-      }
-    );
-
-    if (response.status !== 200) {
-      const normalized = await trimWhiteAndNormalize(rawBuffer);
-      return { cleanImage: toDataUri(normalized) };
-    }
-
-    const padded = await padAndCenter(Buffer.from(response.data));
+  const byFile = await callRemoveBgWithFile(rawBuffer, apiKey);
+  if (byFile) {
+    const padded = await padAndCenter(byFile);
     return { cleanImage: toDataUri(padded) };
-  } catch {
-    const normalized = await trimWhiteAndNormalize(rawBuffer);
-    return { cleanImage: toDataUri(normalized) };
   }
+
+  // Strategy 3: Local white-trim normalization as last resort
+  const normalized = await trimWhiteAndNormalize(rawBuffer);
+  return { cleanImage: toDataUri(normalized) };
 }

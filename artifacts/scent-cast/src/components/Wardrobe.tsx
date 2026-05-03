@@ -122,7 +122,9 @@ export const Wardrobe: React.FC<{
                     <div className="glass-acrylic glass-acrylic-animate rounded-scent transition-all duration-700 group-hover:-translate-y-4 group-hover:shadow-[0_30px_70px_rgba(255,255,255,0.1)] relative overflow-hidden">
                       <div className="aspect-[3/4] p-10 flex flex-col items-center justify-center relative">
                         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.01] to-white/[0.05] pointer-events-none" />
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-1000 brightness-[1.05] relative z-10" referrerPolicy="no-referrer" />
+                        <div className="w-full h-full flex items-center justify-center relative z-10 group-hover:scale-110 transition-transform duration-1000">
+                          <img src={item.imageUrl} alt={item.name} className="max-w-full max-h-full w-auto h-auto object-contain brightness-[1.05]" style={{ maxHeight: '100%', maxWidth: '100%' }} referrerPolicy="no-referrer" />
+                        </div>
                         <div className="absolute bottom-8 left-8 right-8 text-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
                           <p className="text-[9px] uppercase tracking-widest text-white/60 mb-1 leading-tight">{item.brand}</p>
                           <h4 className="font-serif italic text-lg text-white leading-tight">{item.name}</h4>
