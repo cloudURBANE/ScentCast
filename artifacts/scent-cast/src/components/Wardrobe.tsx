@@ -62,7 +62,7 @@ export const Wardrobe: React.FC<{
         <div className="flex flex-col items-center justify-center text-center border-b border-white/5 pb-16 gap-12">
           <div className="space-y-4">
             <p className="text-[10px] uppercase tracking-[0.6em] text-white/40 font-bold">Archives // Private Vault</p>
-            <h2 className="font-display italic text-4xl sm:text-6xl md:text-8xl text-white tracking-tighter">Vault of Aromas</h2>
+            <h2 className="font-serif italic text-4xl sm:text-6xl md:text-8xl text-white tracking-tighter">Vault of Aromas</h2>
           </div>
           <div className="flex flex-col items-center gap-8 w-full">
             <div className="relative w-full max-w-2xl">
@@ -74,7 +74,7 @@ export const Wardrobe: React.FC<{
                 className="w-full bg-white/[0.02] border border-white/5 rounded-none h-16 px-8 text-white font-sans text-sm focus:border-white/20 outline-none transition-all placeholder:text-white/10 uppercase tracking-widest"
               />
             </div>
-            <span className="font-display italic text-white/20 text-xl sm:text-3xl whitespace-nowrap">{filteredItems.length} ENTRIES</span>
+            <span className="font-serif italic text-white/20 text-xl sm:text-3xl whitespace-nowrap">{filteredItems.length} ENTRIES</span>
           </div>
         </div>
 
@@ -83,7 +83,7 @@ export const Wardrobe: React.FC<{
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
             <div className="flex items-center gap-4 px-4 relative z-10">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              <h3 className="font-display italic text-2xl text-white/60 tracking-[0.3em] uppercase">Tactical Selection</h3>
+              <h3 className="font-serif italic text-2xl text-white/60 tracking-[0.3em] uppercase">Tactical Selection</h3>
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
             <div className="flex justify-center relative z-10">
@@ -98,7 +98,7 @@ export const Wardrobe: React.FC<{
                     <img src={featuredItem.imageUrl} alt={featuredItem.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-1000 brightness-[1.15] relative z-10" referrerPolicy="no-referrer" />
                     <div className="text-center mt-12 space-y-3">
                       <p className="text-[10px] uppercase text-white/50 tracking-[0.5em] font-bold font-sans">{featuredItem.brand}</p>
-                      <h4 className="font-display italic text-3xl sm:text-5xl text-white tracking-tighter">{featuredItem.name}</h4>
+                      <h4 className="font-serif italic text-3xl sm:text-5xl text-white tracking-tighter">{featuredItem.name}</h4>
                     </div>
                   </motion.div>
                 </div>
@@ -125,13 +125,13 @@ export const Wardrobe: React.FC<{
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-1000 brightness-[1.05] relative z-10" referrerPolicy="no-referrer" />
                         <div className="absolute bottom-8 left-8 right-8 text-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
                           <p className="text-[9px] uppercase tracking-widest text-white/60 mb-1 leading-tight">{item.brand}</p>
-                          <h4 className="font-display italic text-lg text-white leading-tight">{item.name}</h4>
+                          <h4 className="font-serif italic text-lg text-white leading-tight">{item.name}</h4>
                         </div>
                       </div>
                     </div>
                     <div className="text-center mt-6 space-y-1 transition-opacity duration-500 group-hover:opacity-30">
                       <p className="text-[8px] uppercase text-white/30 tracking-[0.4em] font-bold font-sans">{item.brand}</p>
-                      <h3 className="font-display italic text-xl text-white leading-tight uppercase tracking-tighter">{item.name}</h3>
+                      <h3 className="font-serif italic text-xl text-white leading-tight uppercase tracking-tighter">{item.name}</h3>
                     </div>
                   </motion.div>
                 ))}
@@ -140,14 +140,14 @@ export const Wardrobe: React.FC<{
                     <div className="w-12 h-12 border border-dashed border-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform mb-4">
                       <span className="text-white/20 text-3xl">+</span>
                     </div>
-                    <p className="font-display italic text-white/20 text-2xl tracking-tighter uppercase">Expand Archive</p>
+                    <p className="font-serif italic text-white/20 text-2xl tracking-tighter uppercase">Expand Archive</p>
                   </div>
                 )}
               </div>
             </div>
           )) : !searchQuery && (
             <div className="py-40 text-center border border-dashed border-white/5 rounded-scent">
-              <p className="font-display italic text-4xl text-white/10">The vault is currently vacant</p>
+              <p className="font-serif italic text-4xl text-white/10">The vault is currently vacant</p>
             </div>
           )}
         </div>
@@ -172,8 +172,8 @@ export const Wardrobe: React.FC<{
                       Intelligence Profile // {selectedItem.id.slice(0, 10)}
                     </motion.div>
                     <div>
-                      <h2 className="font-display italic text-4xl sm:text-7xl lg:text-8xl leading-tight text-white tracking-tighter uppercase">{selectedItem.name}</h2>
-                      <p className="text-2xl text-white/40 font-display italic">{selectedItem.brand}</p>
+                      <h2 className="font-serif italic text-4xl sm:text-7xl lg:text-8xl leading-tight text-white tracking-tighter uppercase">{selectedItem.name}</h2>
+                      <p className="text-2xl text-white/40 font-serif italic">{selectedItem.brand}</p>
                     </div>
                   </header>
 
@@ -186,7 +186,7 @@ export const Wardrobe: React.FC<{
                     ].map(({ label, value }) => (
                       <div key={label} className="text-center md:text-left">
                         <p className="text-[9px] uppercase tracking-widest text-white/20 font-bold mb-1">{label}</p>
-                        <p className="font-display italic text-2xl text-white">{value}</p>
+                        <p className="font-serif italic text-2xl text-white">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -206,7 +206,7 @@ export const Wardrobe: React.FC<{
                             <p className="w-16 text-[9px] uppercase tracking-[0.3em] text-scent-accent font-bold pt-2">{level}</p>
                             <div className="flex flex-wrap gap-x-6 gap-y-3 flex-1">
                               {notes.map(note => (
-                                <span key={note} className="text-xl sm:text-3xl italic text-white/80 font-display hover:text-white transition-all cursor-default">{note}</span>
+                                <span key={note} className="text-xl sm:text-3xl italic text-white/80 font-serif hover:text-white transition-all cursor-default">{note}</span>
                               ))}
                             </div>
                           </div>

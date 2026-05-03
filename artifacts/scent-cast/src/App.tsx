@@ -120,7 +120,7 @@ export default function App() {
         <div className="max-w-[1400px] mx-auto h-full flex items-center justify-center">
           <div className="flex items-center gap-2">
             <Wind size={24} strokeWidth={1} className="text-white" />
-            <h1 className="font-display text-2xl italic tracking-tighter uppercase">Scent Cast</h1>
+            <h1 className="font-serif text-2xl italic tracking-tighter uppercase">Scent Cast</h1>
           </div>
         </div>
       </nav>
@@ -148,7 +148,7 @@ export default function App() {
                   <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10" />
                   <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10" />
                 </div>
-                <h2 className="font-display italic text-2xl sm:text-4xl lg:text-7xl leading-tight text-white max-w-4xl tracking-tighter">Find your signature for the current atmosphere.</h2>
+                <h2 className="font-serif italic text-2xl sm:text-4xl lg:text-7xl leading-tight text-white max-w-4xl tracking-tighter">Find your signature for the current atmosphere.</h2>
               </header>
 
               <div className="flex flex-col items-center gap-8 w-full max-w-6xl mx-auto">
@@ -163,7 +163,7 @@ export default function App() {
                   className="w-full max-w-2xl h-14 bg-white text-black flex items-center justify-center gap-6 hover:bg-neutral-200 transition-all group rounded-[1.25rem] border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.1)]"
                 >
                   <Play size={20} className="fill-current group-hover:scale-110 transition-transform" />
-                  <span className="font-display italic text-xl sm:text-2xl">Discover Your Signature Scent</span>
+                  <span className="font-serif italic text-xl sm:text-2xl">Discover Your Signature Scent</span>
                 </button>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function App() {
           <div className="py-20 border-y border-white/5 bg-transparent overflow-hidden flex select-none relative">
             <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-black via-black/40 to-transparent z-20 pointer-events-none" />
             <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-black via-black/40 to-transparent z-20 pointer-events-none" />
-            <div className="flex animate-infinite-scroll-slow gap-40 text-[18px] uppercase tracking-tighter text-white/40 font-display italic whitespace-nowrap items-center">
+            <div className="flex animate-infinite-scroll-slow gap-40 text-[18px] uppercase tracking-tighter text-white/40 font-serif italic whitespace-nowrap items-center">
               {[...Array(6)].map((_, i) => (
                 <React.Fragment key={i}>
                   <div className="flex items-center gap-8">
@@ -185,7 +185,7 @@ export default function App() {
                   <div className="flex items-center gap-8">
                     <div className="flex flex-col items-start gap-1">
                       <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Atmosphere:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-display italic tracking-tighter">{weatherLoading ? <Typewriter text="Syncing..." speed={30} /> : `${weather?.temp}°F`}</span>
+                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Syncing..." speed={30} /> : `${weather?.temp}°F`}</span>
                     </div>
                   </div>
                   <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
@@ -194,7 +194,7 @@ export default function App() {
                       <div className="flex items-center gap-8">
                         <div className="flex flex-col items-start gap-1">
                           <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Coordinate:</span>
-                          <span className="text-white text-3xl sm:text-5xl font-display italic tracking-tighter">{weather.location}</span>
+                          <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weather.location}</span>
                         </div>
                       </div>
                       <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
@@ -203,14 +203,14 @@ export default function App() {
                   <div className="flex items-center gap-8">
                     <div className="flex flex-col items-start gap-1">
                       <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Matrix:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-display italic tracking-tighter">{weatherLoading ? <Typewriter text="Detecting..." speed={30} /> : weather?.condition}</span>
+                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Detecting..." speed={30} /> : weather?.condition}</span>
                     </div>
                   </div>
                   <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
                   <div className="flex items-center gap-8">
                     <div className="flex flex-col items-start gap-1">
                       <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Saturation:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-display italic tracking-tighter">{weatherLoading ? <Typewriter text="Measuring..." speed={30} /> : `${weather?.humidity}%`}</span>
+                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Measuring..." speed={30} /> : `${weather?.humidity}%`}</span>
                     </div>
                   </div>
                   <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
@@ -239,12 +239,12 @@ export default function App() {
               </button>
               <header>
                 <p className="text-[10px] uppercase tracking-[0.4em] text-scent-accent font-bold mb-6">Strategic Alignment Found</p>
-                <h2 className="font-display italic text-3xl sm:text-6xl mb-6">You should wear</h2>
+                <h2 className="font-serif italic text-3xl sm:text-6xl mb-6">You should wear</h2>
                 <div className="h-1 w-16 bg-scent-accent mx-auto" />
               </header>
               <div className="py-16 border-y border-white/10 group cursor-pointer" onClick={() => setActiveRecommendation(null)}>
-                <p className="text-xl uppercase tracking-[0.2em] text-white/40 mb-4 font-display">{activeRecommendation.brand}</p>
-                <h3 className="font-display italic text-4xl sm:text-8xl transition-transform group-hover:scale-105 text-white">{activeRecommendation.name}</h3>
+                <p className="text-xl uppercase tracking-[0.2em] text-white/40 mb-4 font-serif">{activeRecommendation.brand}</p>
+                <h3 className="font-serif italic text-4xl sm:text-8xl transition-transform group-hover:scale-105 text-white">{activeRecommendation.name}</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-left">
                 <div>
@@ -268,7 +268,7 @@ export default function App() {
         <div className="max-w-[1400px] mx-auto text-center space-y-4">
           <div className="flex items-center justify-center gap-2 opacity-30">
             <Wind size={18} />
-            <p className="font-display font-bold italic tracking-tighter uppercase">Scent Cast</p>
+            <p className="font-serif font-bold italic tracking-tighter uppercase">Scent Cast</p>
           </div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-scent-muted">© 2026 Olfactory Intelligence Systems</p>
         </div>

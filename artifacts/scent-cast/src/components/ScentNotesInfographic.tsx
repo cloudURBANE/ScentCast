@@ -120,7 +120,7 @@ export const ScentNotesInfographic: React.FC<ScentNotesInfographicProps> = ({ py
                       >
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md border border-white/10 rounded-full shadow-xl">
                           <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-tr ${LAYER_INFO[hoveredLayer].color} animate-pulse`} />
-                          <span className="text-[10px] font-display italic text-white/90 whitespace-nowrap tracking-wide">{note}</span>
+                          <span className="text-[10px] font-serif italic text-white/90 whitespace-nowrap tracking-wide">{note}</span>
                         </div>
                       </motion.div>
                     );
@@ -145,7 +145,7 @@ export const ScentNotesInfographic: React.FC<ScentNotesInfographicProps> = ({ py
                     {React.createElement(LAYER_INFO[hoveredLayer].icon, { size: 28, className: LAYER_INFO[hoveredLayer].textColor })}
                   </div>
                   <div>
-                    <h3 className={`text-3xl font-display italic ${LAYER_INFO[hoveredLayer].textColor} tracking-tight`}>{LAYER_INFO[hoveredLayer].title}</h3>
+                    <h3 className={`text-3xl font-serif italic ${LAYER_INFO[hoveredLayer].textColor} tracking-tight`}>{LAYER_INFO[hoveredLayer].title}</h3>
                     <p className="text-[11px] uppercase tracking-[0.4em] text-white/40 font-bold">{LAYER_INFO[hoveredLayer].subtitle}</p>
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export const ScentNotesInfographic: React.FC<ScentNotesInfographicProps> = ({ py
                     <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4 font-sans">Active Notes</p>
                     <div className="flex flex-wrap gap-2">
                       {pyramid[hoveredLayer].map(note => (
-                        <div key={note} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs italic text-white font-display hover:bg-white/10 transition-colors">
+                        <div key={note} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs italic text-white font-serif hover:bg-white/10 transition-colors">
                           {note}
                         </div>
                       ))}
@@ -175,7 +175,7 @@ export const ScentNotesInfographic: React.FC<ScentNotesInfographicProps> = ({ py
                   <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full" />
                   <Wind className="text-white/20 relative z-10 animate-pulse" size={64} strokeWidth={1} />
                 </div>
-                <h4 className="text-white font-display italic text-2xl mb-4 tracking-tight">Digital Scent Map</h4>
+                <h4 className="text-white font-serif italic text-2xl mb-4 tracking-tight">Digital Scent Map</h4>
                 <p className="text-white/40 text-sm max-w-[280px] font-sans leading-relaxed">
                   The pyramid visualizes the temporal breakdown of sensory molecules. Hover or tap to analyze specific layers.
                 </p>
@@ -199,7 +199,7 @@ export const ScentNotesInfographic: React.FC<ScentNotesInfographicProps> = ({ py
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-2">
               {pyramid[level].map(note => (
-                <p key={note} className="text-sm text-white/40 font-display italic hover:text-white/80 transition-colors cursor-default">{note}</p>
+                <p key={note} className="text-sm text-white/40 font-serif italic hover:text-white/80 transition-colors cursor-default">{note}</p>
               ))}
             </div>
           </motion.div>

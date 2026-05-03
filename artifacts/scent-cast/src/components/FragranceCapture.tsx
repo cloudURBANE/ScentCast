@@ -191,7 +191,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             className="w-20 h-20 border-t-2 border-white/40 rounded-full mb-6"
           />
-          <h3 className="font-display italic text-xl text-white mb-2">{loadingStatus}</h3>
+          <h3 className="font-serif italic text-xl text-white mb-2">{loadingStatus}</h3>
           <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-sans font-bold italic animate-pulse">Processing Olfactory Data</p>
         </div>
       )}
@@ -199,7 +199,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
         <div className="flex flex-col items-center text-center mb-8 px-2 gap-6">
           <div>
             <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted font-bold mb-1">Add To Vault</p>
-            <h2 className="font-display italic text-2xl text-white tracking-tighter">Capture Essence</h2>
+            <h2 className="font-serif italic text-2xl text-white tracking-tighter">Capture Essence</h2>
           </div>
           <div className="flex bg-white/5 p-1 rounded-full border border-white/10 w-fit h-fit transition-all duration-500 hover:border-white/20">
             <button
@@ -255,7 +255,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
               <button
                 onClick={handleAnalyze}
                 disabled={uploading}
-                className="absolute bottom-3 right-3 h-10 px-6 bg-white text-scent-bg font-display italic text-sm flex items-center justify-center gap-2 disabled:opacity-50 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all active:scale-95"
+                className="absolute bottom-3 right-3 h-10 px-6 bg-white text-scent-bg font-serif italic text-sm flex items-center justify-center gap-2 disabled:opacity-50 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all active:scale-95"
               >
                 {uploading ? <Loader2 size={12} className="animate-spin text-scent-bg" /> : <Upload size={12} className="text-scent-bg" strokeWidth={3} />}
                 <span>{uploading ? "Analyzing..." : "Identify Scent"}</span>
@@ -300,7 +300,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="mt-10 py-10 border-t border-white/10 flex flex-col items-center text-center"
             >
-              <p className="font-display italic text-lg text-white/40 mb-2">No Olfactory Matches Found</p>
+              <p className="font-serif italic text-lg text-white/40 mb-2">No Olfactory Matches Found</p>
               <p className="text-[10px] uppercase tracking-widest text-scent-muted max-w-[200px] leading-relaxed">
                 Try a different search term or use vision capture with a clearer image.
               </p>
@@ -338,7 +338,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
                         )}
                       </div>
                       <div>
-                        <p className="font-display italic text-lg leading-tight text-white">{m.name}</p>
+                        <p className="font-serif italic text-lg leading-tight text-white">{m.name}</p>
                         <p className="text-[8px] uppercase text-scent-muted tracking-widest font-sans font-bold">{m.brand}</p>
                       </div>
                     </div>
@@ -348,7 +348,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
               </div>
               <button
                 onClick={handleConfirm}
-                className="w-full mt-6 h-14 bg-white text-scent-bg font-display italic text-lg hover:scale-[1.02] active:scale-95 transition-all rounded-[1.25rem] shadow-lg"
+                className="w-full mt-6 h-14 bg-white text-scent-bg font-serif italic text-lg hover:scale-[1.02] active:scale-95 transition-all rounded-[1.25rem] shadow-lg"
               >
                 Sync to Vault
               </button>

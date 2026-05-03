@@ -67,7 +67,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
                 <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                   <header>
                     <p className="text-[10px] uppercase tracking-[0.4em] text-scent-muted mb-2">Discovery Engine // Step 01</p>
-                    <h2 className="font-display italic text-4xl">What is your destination?</h2>
+                    <h2 className="font-serif italic text-4xl">What is your destination?</h2>
                   </header>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {DESTINATIONS.map((d) => (
@@ -78,7 +78,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
                       >
                         <d.icon size={20} className={destination === d.type ? 'text-scent-accent' : 'text-scent-muted'} />
                         <div>
-                          <p className={`font-display italic text-lg ${destination === d.type ? 'text-scent-accent' : ''}`}>{d.type}</p>
+                          <p className={`font-serif italic text-lg ${destination === d.type ? 'text-scent-accent' : ''}`}>{d.type}</p>
                           <p className="text-[10px] uppercase tracking-wider text-scent-muted">{d.desc}</p>
                         </div>
                       </button>
@@ -89,7 +89,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
                 <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
                   <header>
                     <p className="text-[10px] uppercase tracking-[0.4em] text-scent-muted mb-2">Discovery Engine // Step 02</p>
-                    <h2 className="font-display italic text-4xl">Define your energy state</h2>
+                    <h2 className="font-serif italic text-4xl">Define your energy state</h2>
                   </header>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {ENERGIES.map((e) => (
@@ -100,7 +100,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
                       >
                         <e.icon size={20} className={energy === e.type ? 'text-scent-accent' : 'text-scent-muted'} />
                         <div>
-                          <p className={`font-display italic text-lg ${energy === e.type ? 'text-scent-accent' : ''}`}>{e.type}</p>
+                          <p className={`font-serif italic text-lg ${energy === e.type ? 'text-scent-accent' : ''}`}>{e.type}</p>
                           <p className="text-[10px] uppercase tracking-wider text-scent-muted">{e.desc}</p>
                         </div>
                       </button>
