@@ -1,0 +1,361 @@
+import React, { useState } from 'react';
+import { Camera, Search, RefreshCw, Upload, X, Loader2, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface FragranceMatch {
+  name: string;
+  brand: string;
+  imageUrl: string;
+  notes?: string[];
+  family?: string;
+  description?: string;
+  pyramid?: any;
+}
+
+export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ onAdd }) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState("");
+  const [matches, setMatches] = useState<FragranceMatch[]>([]);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mode, setMode] = useState<'vision' | 'search'>('vision');
+  const [errorStatus, setErrorStatus] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (selected) {
+      setFile(selected);
+      setPreview(URL.createObjectURL(selected));
+      setMatches([]);
+      setSelectedIdx(null);
+      setErrorStatus(null);
+      setHasSearched(false);
+    }
+  };
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setUploading(true);
+    setLoadingStatus("AI Researching Fragrance...");
+    setMatches([]);
+    setErrorStatus(null);
+    setHasSearched(false);
+    try {
+      const geminiRes = await fetch('/api/gemini/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery }),
+      });
+      if (!geminiRes.ok) throw new Error(`Gemini search failed: HTTP ${geminiRes.status}`);
+      const profileData = await geminiRes.json();
+      setHasSearched(true);
+      setLoadingStatus(`Found: ${profileData.brand} ${profileData.name}`);
+
+      const profileRes = await fetch('/api/scent-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileData.name,
+          brand: profileData.brand,
+          notes: profileData.notes,
+          family: profileData.family,
+          description: profileData.description,
+          pyramid: profileData.pyramid
+        }),
+      });
+      if (!profileRes.ok) throw new Error(`Profile sync failed: HTTP ${profileRes.status}`);
+      const finalProfile = await profileRes.json();
+      if (finalProfile && !finalProfile.error) {
+        setLoadingStatus("Intelligence Collation Complete.");
+        setMatches([{
+          ...finalProfile,
+          name: finalProfile.product?.name || profileData.name,
+          brand: finalProfile.product?.brand || profileData.brand,
+          imageUrl: finalProfile.imageUrl
+        }]);
+        setSelectedIdx(0);
+      } else {
+        setErrorStatus(finalProfile?.error || "Synthesis failed");
+      }
+    } catch (err: any) {
+      try {
+        setLoadingStatus("Retrying via Fallback Engine...");
+        const res = await fetch('/api/search-scent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchQuery }),
+        });
+        const data = await res.json();
+        if (data && !data.error) {
+          setMatches([data]);
+          setSelectedIdx(0);
+        } else {
+          setErrorStatus(err.message || "Search failed.");
+        }
+      } catch {
+        setErrorStatus("Identification failed. Please check your connection.");
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setErrorStatus(null);
+    if (mode === 'vision') handleAnalyze();
+    else handleSearch();
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve((reader.result as string).split(',')[1]);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleAnalyze = async () => {
+    if (!file || !preview) return;
+    setUploading(true);
+    setLoadingStatus("Analyzing Image via Neural Vision...");
+    setHasSearched(false);
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await fetch('/api/gemini/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, mimeType: file.type }),
+      });
+      if (!res.ok) throw new Error(`Vision API failed: HTTP ${res.status}`);
+      const results = await res.json();
+      if (results && results.length > 0) {
+        setHasSearched(true);
+        setMatches(results.map((r: any) => ({ ...r, imageUrl: preview })));
+        setSelectedIdx(0);
+      } else {
+        setErrorStatus("Could not identify this bottle. Try a clearer photo.");
+      }
+    } catch (err: any) {
+      setErrorStatus("Visual identification failed. Please ensure the bottle is clear and centered.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (selectedIdx !== null && matches[selectedIdx] && onAdd) {
+      const selected = matches[selectedIdx];
+      if ((selected as any).scent_vector) {
+        onAdd({
+          ...selected,
+          id: Math.random().toString(36).substr(2, 9),
+          season: (selected as any).family?.includes('Fresh') ? 'Summer' : (selected as any).family?.includes('Woody') ? 'Winter' : 'Universal'
+        });
+      } else {
+        setUploading(true);
+        setLoadingStatus("Finalizing Neural Link...");
+        try {
+          const profileRes = await fetch('/api/scent-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: selected.name, brand: selected.brand, imageUrl: selected.imageUrl })
+          });
+          if (!profileRes.ok) throw new Error(`HTTP ${profileRes.status}`);
+          const data = await profileRes.json();
+          onAdd({ ...data, id: Math.random().toString(36).substr(2, 9), season: 'Universal' });
+        } catch (err) {
+          console.error("Final sync failed", err);
+        } finally {
+          setUploading(false);
+        }
+      }
+      setPreview(null);
+      setFile(null);
+      setMatches([]);
+      setSelectedIdx(null);
+      setHasSearched(false);
+    }
+  };
+
+  return (
+    <div className="glass-shell rounded-[var(--radius-scent)] relative overflow-hidden">
+      {uploading && (
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-xl z-50 flex flex-col items-center justify-center p-8 text-center">
+          <motion.div
+            animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 border-t-2 border-white/40 rounded-full mb-6"
+          />
+          <h3 className="font-display italic text-xl text-white mb-2">{loadingStatus}</h3>
+          <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-sans font-bold italic animate-pulse">Processing Olfactory Data</p>
+        </div>
+      )}
+      <div className="glass rounded-[var(--radius-scent-inner)] p-4 md:p-5">
+        <div className="flex flex-col items-center text-center mb-8 px-2 gap-6">
+          <div>
+            <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted font-bold mb-1">Add To Vault</p>
+            <h2 className="font-display italic text-2xl text-white tracking-tighter">Capture Essence</h2>
+          </div>
+          <div className="flex bg-white/5 p-1 rounded-full border border-white/10 w-fit h-fit transition-all duration-500 hover:border-white/20">
+            <button
+              onClick={() => { setMode('vision'); setErrorStatus(null); }}
+              className={`px-6 py-1.5 rounded-full text-[9px] uppercase tracking-widest transition-all ${mode === 'vision' ? 'bg-white text-scent-bg font-bold shadow-lg shadow-white/5' : 'text-scent-muted hover:text-white'}`}
+            >
+              Vision
+            </button>
+            <button
+              onClick={() => { setMode('search'); setErrorStatus(null); }}
+              className={`px-6 py-1.5 rounded-full text-[9px] uppercase tracking-widest transition-all ${mode === 'search' ? 'bg-white text-scent-bg font-bold shadow-lg shadow-white/5' : 'text-scent-muted hover:text-white'}`}
+            >
+              Search
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {errorStatus && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-scent"
+            >
+              <div className="flex items-start gap-3 mb-2">
+                <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                <p className="text-[10px] text-red-500/90 font-medium leading-relaxed">{errorStatus}</p>
+              </div>
+              <button onClick={handleRetry} className="text-[9px] uppercase tracking-widest text-red-500 font-bold hover:underline ml-4">
+                Try Again
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {mode === 'vision' ? (
+          !preview ? (
+            <label className="w-full h-14 flex items-center justify-center cursor-pointer group hover:bg-white/[0.05] transition-all rounded-[1.25rem] border border-white/10 bg-white/[0.02]">
+              <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+              <div className="flex items-center gap-3">
+                <Camera size={18} className="text-scent-muted group-hover:text-white transition-colors" />
+                <span className="text-[11px] uppercase tracking-widest text-scent-muted group-hover:text-white transition-colors font-bold">Sync Photo / Choose File</span>
+              </div>
+            </label>
+          ) : (
+            <div className="relative h-40 w-full bg-black/40 overflow-hidden border border-white/10 rounded-[1.25rem] flex items-center justify-center">
+              <img src={preview} alt="Preview" className="h-full w-auto object-contain brightness-110" />
+              <button
+                onClick={() => { setPreview(null); setFile(null); setMatches([]); setSelectedIdx(null); }}
+                className="absolute top-3 right-3 bg-black/40 backdrop-blur-md p-1.5 rounded-full hover:bg-white/20 transition-colors text-white border border-white/10"
+              >
+                <X size={14} />
+              </button>
+              <button
+                onClick={handleAnalyze}
+                disabled={uploading}
+                className="absolute bottom-3 right-3 h-10 px-6 bg-white text-scent-bg font-display italic text-sm flex items-center justify-center gap-2 disabled:opacity-50 rounded-full hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all active:scale-95"
+              >
+                {uploading ? <Loader2 size={12} className="animate-spin text-scent-bg" /> : <Upload size={12} className="text-scent-bg" strokeWidth={3} />}
+                <span>{uploading ? "Analyzing..." : "Identify Scent"}</span>
+              </button>
+            </div>
+          )
+        ) : (
+          <div className="space-y-4">
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setErrorStatus(null); }}
+                placeholder="Enter Fragrance Name..."
+                className="w-full bg-white/[0.03] border border-white/10 rounded-[1.25rem] h-14 px-6 text-white font-sans text-sm outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+              />
+              <button
+                type="submit"
+                disabled={uploading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 text-scent-muted hover:text-white transition-colors disabled:opacity-50"
+              >
+                {uploading ? <RefreshCw size={16} className="animate-spin" /> : <Search size={18} />}
+              </button>
+            </form>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {['Aventus', 'Rouge 540', 'Santal 33'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => { setSearchQuery(tag); setTimeout(() => handleSearch(), 100); }}
+                  className="px-3 py-1 bg-white/5 rounded-full text-[8px] uppercase tracking-widest text-scent-muted hover:text-white hover:bg-white/10 transition-all border border-white/5"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {hasSearched && matches.length === 0 && !uploading && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="mt-10 py-10 border-t border-white/10 flex flex-col items-center text-center"
+            >
+              <p className="font-display italic text-lg text-white/40 mb-2">No Olfactory Matches Found</p>
+              <p className="text-[10px] uppercase tracking-widest text-scent-muted max-w-[200px] leading-relaxed">
+                Try a different search term or use vision capture with a clearer image.
+              </p>
+            </motion.div>
+          )}
+
+          {matches.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+              className="mt-8 pt-6 border-t border-white/10"
+            >
+              <p className="text-[9px] uppercase tracking-[0.4em] text-scent-muted mb-4 font-bold text-center">Archive Matches</p>
+              <div className="grid grid-cols-1 gap-2">
+                {matches.map((m, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setSelectedIdx(i)}
+                    className={`flex items-center justify-between p-3 border transition-all cursor-pointer rounded-[1.25rem] ${selectedIdx === i ? 'border-white bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white/5 p-1 rounded-sm overflow-hidden flex items-center justify-center border border-white/10">
+                        {m.imageUrl ? (
+                          <img
+                            src={m.imageUrl}
+                            alt={m.name}
+                            className="w-full h-full object-contain"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="text-[8px] text-white/20 font-bold uppercase text-center">N/A</div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-display italic text-lg leading-tight text-white">{m.name}</p>
+                        <p className="text-[8px] uppercase text-scent-muted tracking-widest font-sans font-bold">{m.brand}</p>
+                      </div>
+                    </div>
+                    {selectedIdx === i && <Check size={16} className="text-white" />}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleConfirm}
+                className="w-full mt-6 h-14 bg-white text-scent-bg font-display italic text-lg hover:scale-[1.02] active:scale-95 transition-all rounded-[1.25rem] shadow-lg"
+              >
+                Sync to Vault
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};

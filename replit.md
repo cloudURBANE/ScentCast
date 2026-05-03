@@ -25,3 +25,50 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+### Scent Cast (`artifacts/scent-cast`)
+- **Kind**: React + Vite SPA at `/`
+- **Port**: 18716
+- **Description**: Premium fragrance intelligence platform with AI-powered scent identification, weather-based recommendations, and a personal fragrance vault.
+
+**Frontend components:**
+- `LavaBackground.tsx` — WebGL GLSL shader for animated crack lighting effect
+- `WeatherWidget.tsx` — Live weather display with Three.js/R3F icosahedron visualization
+- `FragranceCapture.tsx` — Dual-mode (Vision AI / Text Search) fragrance capture widget
+- `Wardrobe.tsx` — Personal fragrance vault with 3D shelf display and detail modal
+- `ScentIntentModal.tsx` — 2-step destination + energy state intent matching flow
+- `ScentNotesInfographic.tsx` — Interactive SVG olfactory pyramid infographic
+- `chat/ChatInterface.tsx` — Nexus chat UI
+
+**Key dependencies:** `three`, `@react-three/fiber`, `framer-motion`, `axios`
+
+### API Server (`artifacts/api-server`)
+- **Kind**: Express 5 REST API at `/api`
+- **Port**: auto-assigned
+
+**API Routes (`/api/`):**
+- `GET /weather` — Live weather via OpenWeatherMap (or demo fallback)
+- `POST /scent-profile` — Build full fragrance intelligence profile (vectorize + image search + bg removal)
+- `POST /search-scent` — Search local dataset + Wikipedia fallback
+- `POST /gemini/search` — AI text identification via Gemini 2.0 Flash (Replit integration)
+- `POST /gemini/vision` — AI image analysis via Gemini 2.0 Flash vision
+
+**Services:**
+- `weatherService.ts` — OpenWeatherMap (3.0 + 2.5 fallback)
+- `imageService.ts` — Google CSE → Bing scraper → Unsplash image search
+- `bgService.ts` — remove.bg API + sharp normalization
+- `scentEngine.ts` — Core orchestrator for profile building
+- `scentParser.ts` — Parse fragrance data
+- `scentVectorizer.ts` — Compute 6-axis scent vector + performance + context
+- `datasetLoader.ts` — Static JSON dataset loader (fragrances.json, ~3.9KB)
+- `fallbackIntelligence.ts` — Wikipedia scraper for unknown fragrances
+
+**Key dependencies:** `@google/genai`, `@workspace/integrations-gemini-ai`, `axios`, `sharp`, `cheerio`, `form-data`
+
+## Environment Variables (Optional)
+- `WEATHER_API_KEY` — OpenWeatherMap API key for live weather data
+- `GOOGLE_API_KEY` + `GOOGLE_CSE_ID` — Google Custom Search for fragrance images
+- `REMOVE_BG_API_KEY` — remove.bg for background removal from bottle images
+- `AI_INTEGRATIONS_GEMINI_BASE_URL` + `AI_INTEGRATIONS_GEMINI_API_KEY` — Replit Gemini integration (auto-provisioned)

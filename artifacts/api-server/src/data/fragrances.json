@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Sauvage",
+    "brand": "Dior",
+    "family": "Fresh Spicy",
+    "notes": ["Bergamot", "Pepper", "Amber", "Lavender", "Musk", "Patchouli"],
+    "imageUrl": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&q=100&w=1200",
+    "pyramid": {
+      "top": ["Bergamot", "Reggio di Calabria Bergamot"],
+      "heart": ["Pepper", "Lavender", "Sichuan Pepper", "Pink Pepper"],
+      "base": ["Ambroxan", "Cedar", "Patchouli"]
+    },
+    "description": "A radically fresh composition, dictated by a name that has the ring of a manifesto. Brutal and noble all at once. Natural ingredients, selected with extreme care, prevail in excessive doses. Radiant top notes burst with the juicy freshness of Reggio di Calabria Bergamot. Ambroxan, derived from precious ambergris, unleashes a powerfully woody trail."
+  },
+  {
+    "name": "Bleu de Chanel",
+    "brand": "Chanel",
+    "family": "Woody Aromatic",
+    "notes": ["Grapefruit", "Lemon", "Mint", "Pink Pepper", "Incense", "Sandalwood", "Cedar", "Ginger"],
+    "imageUrl": "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=100&w=1200",
+    "pyramid": {
+      "top": ["Grapefruit", "Lemon", "Mint", "Pink Pepper"],
+      "heart": ["Ginger", "Jasmine", "Nutmeg"],
+      "base": ["Incense", "Sandalwood", "Cedar", "White Musk", "Patchouli"]
+    },
+    "description": "An aromatic-woody fragrance with a captivating trail. A timeless, masculine scent housed in an enigmatic blue bottle. Bleu de Chanel Parfum is an accomplished composition with a pure, deep character. An intense signature that denotes self-confidence."
+  },
+  {
+    "name": "Aventus",
+    "brand": "Creed",
+    "family": "Fruity Chypere",
+    "notes": ["Pineapple", "Bergamot", "Blackcurrant", "Apple", "Birch", "Patchouli", "Moroccan Jasmine", "Rose", "Musk", "Oak Moss", "Ambergris", "Vanilla"],
+    "imageUrl": "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?auto=format&fit=crop&q=100&w=1200",
+    "pyramid": {
+      "top": ["Pineapple", "Bergamot", "Blackcurrant", "Apple"],
+      "heart": ["Birch", "Patchouli", "Moroccan Jasmine", "Rose"],
+      "base": ["Musk", "Oak Moss", "Ambergris", "Vanilla"]
+    },
+    "description": "Aventus celebrates strength, vision and success. The finest ingredients were hand-selected for this composition, resulting in a fragrance that is both contemporary and classic. Top notes of pineapple and bergamot lead into a heart of birch and patchouli."
+  },
+  {
+    "name": "Baccarat Rouge 540",
+    "brand": "Maison Francis Kurkdjian",
+    "family": "Amber Floral",
+    "notes": ["Saffron", "Jasmine", "Amberwood", "Ambergris", "Fir Resin", "Cedar"],
+    "imageUrl": "https://images.unsplash.com/photo-1583445013765-48c2204f9f2c?auto=format&fit=crop&q=100&w=1200",
+    "pyramid": {
+      "top": ["Saffron", "Jasmine"],
+      "heart": ["Amberwood", "Ambergris"],
+      "base": ["Fir Resin", "Cedar"]
+    },
+    "description": "Luminous and sophisticated, Baccarat Rouge 540 lays on the skin like an amber, floral and woody breeze. A poetic alchemy where the aerial notes of jasmine and the radiance of saffron carry mineral facets of ambergris and woody tones of a freshly cut cedar wood."
+  },
+  {
+    "name": "Santal 33",
+    "brand": "Le Labo",
+    "family": "Woody",
+    "notes": ["Sandalwood", "Cedar", "Cardamom", "Violet", "Papyrus", "Leather", "Amber", "Iris"],
+    "imageUrl": "https://images.unsplash.com/photo-1590156221122-c299c4f69cd9?auto=format&fit=crop&q=100&w=1200",
+    "pyramid": {
+      "top": ["Cardamom", "Iris", "Violet"],
+      "heart": ["Australian Sandalwood", "Cedar", "Papyrus"],
+      "base": ["Leather", "Amber", "Musk"]
+    },
+    "description": "An open fire. The soft drift of smoke. Where sensuality rises after the light has gone. Santal 33 is a perfume that touches the sensual universality of this symbol, that would intoxicate men as much as women."
+  }
+]
