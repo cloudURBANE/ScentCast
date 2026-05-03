@@ -16,21 +16,24 @@ function getDb(): FirebaseFirestore.Firestore | null {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (!projectId || !clientEmail || !privateKey) {
+    console.error("[firebaseCache] Missing Firebase env vars — cache disabled");
     return null;
   }
 
   try {
-    const admin = require("firebase-admin");
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey: privateKey.replace(/\\n/g, "\n"),
-        }),
-      });
-    }
-    firestoreDb = admin.firestore();
+    // firebase-admin is a CJS package; use globalThis.require (injected by esbuild banner)
+    const admin = globalThis.require("firebase-admin");
+    const app = admin.apps.length
+      ? admin.app()
+      : admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            privateKey: privateKey.replace(/\\n/g, "\n"),
+          }),
+        });
+    firestoreDb = app.firestore();
+    console.log("[firebaseCache] Firestore connected ✓");
     return firestoreDb;
   } catch (err) {
     console.error("[firebaseCache] init failed:", err);
@@ -64,6 +67,7 @@ export async function setCachedImage(imageUrl: string, cleanImage: string): Prom
       sourceUrl: imageUrl,
       createdAt: new Date().toISOString(),
     });
+    console.log("[firebaseCache] cached image for key:", key.slice(0, 12) + "...");
   } catch (err) {
     console.error("[firebaseCache] write error:", err);
   }
