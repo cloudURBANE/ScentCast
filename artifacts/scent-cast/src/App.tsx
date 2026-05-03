@@ -53,6 +53,7 @@ export default function App() {
   const [wardrobeLoaded, setWardrobeLoaded] = useState(false);
   const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
   const [activeRecommendation, setActiveRecommendation] = useState<Fragrance | null>(null);
+  const [recommendationReason, setRecommendationReason] = useState<string>('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
@@ -69,8 +70,24 @@ export default function App() {
     }
   }, []);
 
+  // Auto-request location on mount so weather is accurate from the start
   useEffect(() => {
-    fetchWeather();
+    if (!navigator.geolocation) {
+      fetchWeather();
+      return;
+    }
+    setLocationStatus('requesting');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocationStatus('granted');
+        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setLocationStatus('denied');
+        fetchWeather();
+      },
+      { timeout: 10000, enableHighAccuracy: false }
+    );
   }, [fetchWeather]);
 
   const loadWardrobe = useCallback(async (token: string) => {
@@ -177,23 +194,147 @@ export default function App() {
   const handleIntentComplete = (intent: { destination: DestinationType; energy: EnergyState }) => {
     setIsIntentModalOpen(false);
     if (items.length === 0) return;
-    const scores = items.map(item => {
-      let score = 10;
-      if (item.intents?.includes(intent.destination)) score += 50;
-      if (item.energies?.includes(intent.energy)) score += 40;
-      if (weather) {
-        const temp = weather.temp;
-        const cond = weather.condition.toLowerCase();
-        if (temp > 75 && (item.family?.includes('Fresh') || item.family?.includes('Citrus'))) score += 30;
-        if (temp < 65 && (item.family?.includes('Woody') || item.family?.includes('Oriental'))) score += 30;
-        if (cond.includes('rain') && item.notes?.some(n => n.includes('Vetiver') || n.includes('Patchouli'))) score += 20;
+
+    const hour = new Date().getHours();
+    const isMorning = hour >= 6 && hour < 10;
+    const isEvening = hour >= 17 && hour < 21;
+    const isNight = hour >= 21 || hour < 6;
+
+    // Occasion strings from calculateContext — map destinations to matching occasions
+    const destinationOccasions: Record<DestinationType, string[]> = {
+      'Staying In':  ['Intimate', 'Date Night', 'Casual'],
+      'Work':        ['Professional', 'Executive', 'Daytime'],
+      'Going Out':   ['Social', 'Casual', 'Outdoor', 'Sport', 'Social Dominance'],
+      'Night Out':   ['Evening', 'Formal', 'Date Night', 'Social Dominance', 'Intimate'],
+    };
+
+    const scored = items.map(item => {
+      const v = item.scent_vector || { freshness: 0, sweetness: 0, woodiness: 0, spice: 0, warmth: 0, musk: 0 };
+      const { freshness, sweetness, woodiness, spice, warmth, musk } = v;
+      const sillage   = item.performance?.sillage   ?? 5;
+      const longevity = item.performance?.longevity  ?? 5;
+      const family    = (item.family ?? '').toLowerCase();
+      const occasions = item.context?.occasion ?? [];
+
+      let score = 0;
+      const drivers: string[] = [];
+
+      // ── DESTINATION ──────────────────────────────────────────────────
+      if (intent.destination === 'Staying In') {
+        const sub = musk * 2.0 + sweetness * 1.5 + warmth * 1.0 + (10 - sillage) * 1.2;
+        score += sub;
+        if (sub > 20) drivers.push('intimate projection suits the setting');
+      } else if (intent.destination === 'Work') {
+        const sub = woodiness * 2.0 + freshness * 1.5 + (8 - Math.abs(sillage - 5)) * 1.5;
+        score += sub;
+        if (spice > 6 || sweetness > 7) score -= 12; // overpowering in office
+        if (sub > 20) drivers.push('clean, grounded character fits a professional space');
+      } else if (intent.destination === 'Going Out') {
+        const sub = freshness * 1.5 + woodiness * 1.2 + musk * 1.0 + sillage * 1.3;
+        score += sub;
+        if (sub > 20) drivers.push('versatile projection reads well in any setting');
+      } else if (intent.destination === 'Night Out') {
+        const sub = warmth * 2.0 + spice * 2.0 + woodiness * 1.2 + sillage * 2.5;
+        score += sub;
+        if (sub > 20) drivers.push('bold depth and projection command the room at night');
       }
-      if (intent.destination === 'Night Out' && (item.performance?.sillage || 0) >= 6) score += 25;
-      if (intent.destination === 'Work' && (item.performance?.sillage || 0) <= 6) score += 25;
-      return { item, score };
+
+      // Occasion match bonus
+      if (occasions.some(o => destinationOccasions[intent.destination].includes(o))) {
+        score += 15;
+        drivers.push(`its olfactory profile is calibrated for this context`);
+      }
+
+      // ── ENERGY ───────────────────────────────────────────────────────
+      if (intent.energy === 'Calm') {
+        score += freshness * 1.2 + musk * 1.0 - spice * 0.6 - warmth * 0.4;
+        if (freshness >= 6) drivers.push('cool freshness supports a calm presence');
+      } else if (intent.energy === 'Focused') {
+        score += woodiness * 2.0 + freshness * 1.2 - sweetness * 0.8;
+        if (woodiness >= 6) drivers.push('grounded woodiness channels mental clarity');
+      } else if (intent.energy === 'Confident') {
+        score += spice * 2.0 + warmth * 1.5 + woodiness * 1.0 + sillage * 1.5;
+        if (spice >= 5 || sillage >= 7) drivers.push('its assertive character projects authority');
+      } else if (intent.energy === 'Social') {
+        score += musk * 1.8 + freshness * 1.2 + sweetness * 0.8 + sillage * 1.0;
+        if (musk >= 5) drivers.push('skin-close musk draws people in');
+      } else if (intent.energy === 'Relaxed') {
+        score += musk * 1.8 + warmth * 1.2 + sweetness * 0.8 + (10 - sillage) * 0.8;
+        if (warmth >= 5) drivers.push('enveloping warmth suits an unhurried mood');
+      }
+
+      // ── WEATHER ──────────────────────────────────────────────────────
+      if (weather) {
+        const temp     = weather.temp;
+        const cond     = weather.condition.toLowerCase();
+        const humidity = weather.humidity ?? 50;
+
+        if (temp > 85) {
+          score += freshness * 2.5 - warmth * 2.0 - spice * 1.2;
+          if (freshness >= 6) drivers.push(`bright freshness suits ${Math.round(temp)}°F heat`);
+        } else if (temp > 72) {
+          score += freshness * 1.5 + musk * 0.8 - warmth * 0.6;
+          if (freshness >= 5) drivers.push(`light character aligns with ${Math.round(temp)}°F warmth`);
+        } else if (temp > 58) {
+          score += woodiness * 1.5 + freshness * 0.6;
+        } else if (temp > 44) {
+          score += warmth * 2.0 + woodiness * 1.2 + spice * 0.8 - freshness * 0.6;
+          if (warmth >= 5) drivers.push(`warmth cuts through the ${Math.round(temp)}°F chill`);
+        } else {
+          score += warmth * 2.5 + spice * 2.0 + woodiness * 1.0 - freshness * 1.5;
+          if (warmth >= 5 || spice >= 5) drivers.push(`rich density suits the cold`);
+        }
+
+        if (cond.includes('rain') || cond.includes('drizzle')) {
+          score += woodiness * 0.8 + warmth * 0.5;
+          const earthy = item.notes?.some(n =>
+            ['vetiver', 'patchouli', 'cedar', 'oakmoss'].some(k => n.toLowerCase().includes(k))
+          );
+          if (earthy) { score += 10; drivers.push('earthy base thrives in rain'); }
+        }
+        if (cond.includes('sun') || cond.includes('clear')) {
+          score += freshness * 0.5 + musk * 0.3;
+        }
+        if (humidity > 75) {
+          score += freshness * 0.8 - sweetness * 0.6 - warmth * 0.5;
+        }
+      }
+
+      // ── TIME OF DAY ───────────────────────────────────────────────────
+      if (isMorning) {
+        score += freshness * 1.2 - warmth * 0.4;
+        if (freshness >= 6) drivers.push('crisp freshness is made for mornings');
+      } else if (isEvening) {
+        score += warmth * 1.0 + spice * 0.6 + woodiness * 0.5;
+      } else if (isNight) {
+        score += warmth * 1.5 + spice * 1.0 + musk * 0.8;
+        if ((warmth >= 5 || spice >= 5) && intent.destination === 'Night Out') {
+          drivers.push('nocturnal richness reaches its peak after dark');
+        }
+      }
+
+      // ── LONGEVITY BONUS for full-day destinations ─────────────────────
+      if (intent.destination === 'Work' || intent.destination === 'Going Out') {
+        score += longevity * 0.8;
+      }
+
+      // ── SMALL RANDOM NOISE — prevents lockstep ties ───────────────────
+      score += Math.random() * 4;
+
+      return { item, score, drivers, sillage, woodiness, freshness, warmth, spice, musk };
     });
-    scores.sort((a, b) => b.score - a.score);
-    setTimeout(() => setActiveRecommendation(scores[0].item), 800);
+
+    scored.sort((a, b) => b.score - a.score);
+    const winner = scored[0];
+
+    // Build a concise, honest reason from the top scoring drivers
+    const uniqueDrivers = Array.from(new Set(winner.drivers));
+    const reason = uniqueDrivers.length > 0
+      ? uniqueDrivers.slice(0, 2).join(', and ')
+      : 'its olfactory profile best matches your intent and current conditions';
+
+    setRecommendationReason(reason.charAt(0).toUpperCase() + reason.slice(1) + '.');
+    setTimeout(() => setActiveRecommendation(winner.item), 800);
   };
 
   if (!authToken) {
@@ -358,7 +499,7 @@ export default function App() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-left">
                 <div>
                   <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted mb-3 font-bold">Olfactory Reason</p>
-                  <p className="text-sm italic text-scent-muted leading-relaxed">Matches your current energy state and atmospheric conditions perfectly.</p>
+                  <p className="text-sm italic text-scent-muted leading-relaxed">{recommendationReason || 'Optimal olfactory alignment with your current atmospheric conditions.'}</p>
                 </div>
                 <div>
                   <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted mb-3 font-bold">Concentration</p>

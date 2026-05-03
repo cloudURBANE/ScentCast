@@ -4,7 +4,7 @@ import { vectorize, calculatePerformance, calculateContext, type ScentVector, ty
 import { searchImageUrl } from "./imageService";
 import { removeBg } from "./bgService";
 import { getOrCreateCachedImage } from "./firebaseCache";
-import { getCatalogEntry, saveCatalogEntry } from "./catalogService";
+import { getCatalogEntry, saveCatalogEntry, searchCatalog } from "./catalogService";
 
 export interface ScentProfile {
   product: { name: string; brand: string; perfumer?: string };
@@ -64,9 +64,13 @@ export async function buildProfile(
     perfumer?: string;
   }
 ): Promise<ScentProfile | { error: string }> {
-  // 1. Check global catalog first — skip all AI/image work if we already have it
+  // 1. Check global catalog — exact match first, then fuzzy to catch AI naming variations
   const cached = await getCatalogEntry(brand, name);
   if (cached) return cached;
+
+  // Fuzzy search handles cases like "Sauvage EDP" matching stored "Sauvage"
+  const fuzzy = await searchCatalog(`${brand} ${name}`);
+  if (fuzzy) return fuzzy;
 
   // 2. Resolve image: check Firestore by name+brand first; on miss, run image
   // search + remove.bg exactly once even if many users request simultaneously.
