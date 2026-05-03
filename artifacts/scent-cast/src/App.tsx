@@ -47,8 +47,23 @@ const LiveClock: React.FC = () => {
 };
 
 export default function App() {
-  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('scent_token'));
-  const [authEmail, setAuthEmail] = useState<string | null>(() => localStorage.getItem('scent_email'));
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('oauth_token');
+    const oauthEmail = params.get('oauth_email');
+    if (oauthToken && oauthEmail) {
+      localStorage.setItem('scent_token', oauthToken);
+      localStorage.setItem('scent_email', oauthEmail);
+      window.history.replaceState({}, '', window.location.pathname);
+      return oauthToken;
+    }
+    return localStorage.getItem('scent_token');
+  });
+  const [authEmail, setAuthEmail] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthEmail = params.get('oauth_email');
+    return oauthEmail ?? localStorage.getItem('scent_email');
+  });
   const [items, setItems] = useState<Fragrance[]>([]);
   const [wardrobeLoaded, setWardrobeLoaded] = useState(false);
   const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
@@ -510,7 +525,7 @@ export default function App() {
                   <p className="text-sm italic text-scent-muted leading-relaxed">{activeRecommendation.concentration || 'Eau de Parfum'}</p>
                 </div>
               </div>
-              <button onClick={() => setActiveRecommendation(null)} className="w-full py-5 bg-scent-accent text-white uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 transition-opacity">
+              <button onClick={() => setActiveRecommendation(null)} className="w-full py-5 bg-scent-accent text-black uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 transition-opacity">
                 Confirm Alignment
               </button>
             </div>

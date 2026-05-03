@@ -1,39 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Wind, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Wind } from 'lucide-react';
 
 interface AuthModalProps {
   onAuth: (token: string, email: string) => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onAuth }) => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes('@')) {
-      setError('Please enter a valid email.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed }),
-      });
-      if (!res.ok) throw new Error('Auth failed');
-      const data = await res.json();
-      onAuth(data.token, data.email);
-    } catch {
-      setError('Could not connect. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+export const AuthModal: React.FC<AuthModalProps> = () => {
+  const handleGoogleSignIn = () => {
+    window.location.href = '/api/auth/google';
   };
 
   return (
@@ -52,45 +27,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onAuth }) => {
           <div className="text-center space-y-3">
             <p className="text-[10px] uppercase tracking-[0.5em] text-white/30 font-bold">Olfactory Intelligence</p>
             <h1 className="font-serif italic text-4xl sm:text-5xl text-white tracking-tighter leading-tight">
-              Enter your email<br />to access your vault
+              Sign in to access<br />your vault
             </h1>
-            <p className="text-sm text-white/30 font-sans">No password required. Your fragrances are saved to your account.</p>
+            <p className="text-sm text-white/30 font-sans">Your fragrances are saved to your account.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="w-full space-y-4">
-            <div className="relative">
-              <Mail size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                placeholder="your@email.com"
-                autoFocus
-                className="w-full h-14 bg-white/[0.04] border border-white/10 pl-12 pr-6 text-white placeholder:text-white/20 font-sans text-sm outline-none focus:border-white/30 transition-all rounded-2xl"
-              />
-            </div>
-
-            {error && (
-              <p className="text-red-400 text-xs text-center font-sans">{error}</p>
-            )}
-
+          <div className="w-full space-y-4">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-14 bg-white text-black font-serif italic text-xl flex items-center justify-center gap-3 hover:bg-neutral-200 transition-all disabled:opacity-50 rounded-2xl"
+              onClick={handleGoogleSignIn}
+              className="w-full h-14 bg-white text-black font-sans font-semibold text-sm flex items-center justify-center gap-3 hover:bg-neutral-100 transition-all rounded-2xl"
             >
-              {loading ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <>
-                  <span>Access Vault</span>
-                  <ArrowRight size={16} />
-                </>
-              )}
+              <GoogleIcon />
+              Continue with Google
             </button>
-          </form>
+          </div>
         </div>
       </motion.div>
     </div>
   );
 };
+
+const GoogleIcon: React.FC = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+    <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+  </svg>
+);

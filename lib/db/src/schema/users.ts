@@ -6,6 +6,8 @@ export const usersTable = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   token: uuid("token").notNull().defaultRandom(),
+  oauthProvider: text("oauth_provider"),
+  oauthSubject: text("oauth_subject"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
