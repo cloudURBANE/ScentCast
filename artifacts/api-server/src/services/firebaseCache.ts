@@ -3,8 +3,9 @@ import { createHash } from "crypto";
 let firestoreDb: FirebaseFirestore.Firestore | null = null;
 let initAttempted = false;
 
-function cacheKey(imageUrl: string): string {
-  return createHash("sha256").update(imageUrl.trim()).digest("hex");
+function nameKey(brand: string, name: string): string {
+  const normalized = `${brand.trim().toLowerCase()}::${name.trim().toLowerCase()}`;
+  return createHash("sha256").update(normalized).digest("hex");
 }
 
 function getDb(): FirebaseFirestore.Firestore | null {
@@ -21,7 +22,6 @@ function getDb(): FirebaseFirestore.Firestore | null {
   }
 
   try {
-    // firebase-admin is a CJS package; use globalThis.require (injected by esbuild banner)
     const admin = globalThis.require("firebase-admin");
     const app = admin.apps.length
       ? admin.app()
@@ -41,15 +41,18 @@ function getDb(): FirebaseFirestore.Firestore | null {
   }
 }
 
-export async function getCachedImage(imageUrl: string): Promise<string | null> {
+/** Look up a processed bottle image by fragrance name + brand. */
+export async function getCachedImageByName(brand: string, name: string): Promise<string | null> {
   const db = getDb();
   if (!db) return null;
   try {
-    const key = cacheKey(imageUrl);
+    const key = nameKey(brand, name);
     const doc = await db.collection("bg_cache").doc(key).get();
     if (doc.exists) {
       const data = doc.data();
-      return data?.cleanImage ?? null;
+      const hit = data?.cleanImage ?? null;
+      if (hit) console.log(`[firebaseCache] cache HIT — ${brand} ${name}`);
+      return hit;
     }
   } catch (err) {
     console.error("[firebaseCache] read error:", err);
@@ -57,17 +60,25 @@ export async function getCachedImage(imageUrl: string): Promise<string | null> {
   return null;
 }
 
-export async function setCachedImage(imageUrl: string, cleanImage: string): Promise<void> {
+/** Store a processed bottle image keyed by fragrance name + brand. */
+export async function setCachedImageByName(
+  brand: string,
+  name: string,
+  cleanImage: string,
+  sourceUrl?: string,
+): Promise<void> {
   const db = getDb();
   if (!db) return;
   try {
-    const key = cacheKey(imageUrl);
+    const key = nameKey(brand, name);
     await db.collection("bg_cache").doc(key).set({
       cleanImage,
-      sourceUrl: imageUrl,
+      brand: brand.trim(),
+      name: name.trim(),
+      ...(sourceUrl ? { sourceUrl } : {}),
       createdAt: new Date().toISOString(),
     });
-    console.log("[firebaseCache] cached image for key:", key.slice(0, 12) + "...");
+    console.log(`[firebaseCache] cached image — ${brand} ${name}`);
   } catch (err) {
     console.error("[firebaseCache] write error:", err);
   }

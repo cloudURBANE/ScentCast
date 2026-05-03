@@ -1,6 +1,5 @@
 import axios from "axios";
 import sharp from "sharp";
-import { getCachedImage, setCachedImage } from "./firebaseCache";
 
 const REMOVEBG_API = "https://api.remove.bg/v1.0/removebg";
 
@@ -142,12 +141,6 @@ export async function removeBg(input: string, isUrl = false) {
 
   // --- Handle http/https URL inputs ---
 
-  // Check Firebase cache first — skip the API entirely if we have a stored result
-  const cached = await getCachedImage(input);
-  if (cached) {
-    return { cleanImage: cached };
-  }
-
   if (!apiKey) {
     const raw = await downloadImage(input);
     if (raw) {
@@ -161,9 +154,7 @@ export async function removeBg(input: string, isUrl = false) {
   const byUrl = await removeBgByUrl(input, apiKey);
   if (byUrl) {
     const padded = await padAndCenter(byUrl);
-    const dataUri = toDataUri(padded);
-    await setCachedImage(input, dataUri);
-    return { cleanImage: dataUri };
+    return { cleanImage: toDataUri(padded) };
   }
 
   // Strategy 2: download ourselves, send as binary file
@@ -173,12 +164,10 @@ export async function removeBg(input: string, isUrl = false) {
   const byFile = await removeBgByFile(raw, apiKey);
   if (byFile) {
     const padded = await padAndCenter(byFile);
-    const dataUri = toDataUri(padded);
-    await setCachedImage(input, dataUri);
-    return { cleanImage: dataUri };
+    return { cleanImage: toDataUri(padded) };
   }
 
-  // Strategy 3: local white-trim normalization as last resort (not cached — no API credit spent)
+  // Strategy 3: local white-trim normalization as last resort
   const normalized = await trimWhiteAndNormalize(raw);
   return { cleanImage: toDataUri(normalized) };
 }

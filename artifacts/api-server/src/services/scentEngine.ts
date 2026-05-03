@@ -3,6 +3,7 @@ import { parseFragrance } from "./scentParser";
 import { vectorize, calculatePerformance, calculateContext, type ScentVector, type PerformanceMetrics, type ContextProfile } from "./scentVectorizer";
 import { searchImageUrl } from "./imageService";
 import { removeBg } from "./bgService";
+import { getCachedImageByName, setCachedImageByName } from "./firebaseCache";
 
 export interface ScentProfile {
   product: { name: string; brand: string; perfumer?: string };
@@ -62,25 +63,42 @@ export async function buildProfile(
     perfumer?: string;
   }
 ): Promise<ScentProfile | { error: string }> {
-  let finalImageUrl = fallback?.imageUrl;
+  // 1. Check Firestore cache by name+brand first — skip image search + remove.bg entirely on hit
+  const finalName_pre = name.trim();
+  const finalBrand_pre = brand.trim();
+  let cleanImageUrl: string | undefined = undefined;
 
-  try {
-    const searchQuery = `${brand} ${name} single fragrance bottle no box HQ`;
-    const searchRes = await searchImageUrl(searchQuery);
-    if (searchRes && !searchRes.includes("unsplash-placeholder")) {
-      finalImageUrl = searchRes;
-    }
-  } catch {
-    finalImageUrl = fallback?.imageUrl;
-  }
+  const cachedImage = await getCachedImageByName(finalBrand_pre, finalName_pre);
+  if (cachedImage) {
+    cleanImageUrl = cachedImage;
+  } else {
+    // 2. Cache miss — find an image URL then run remove.bg
+    let finalImageUrl = fallback?.imageUrl;
+    let usedSourceUrl: string | undefined;
 
-  let cleanImageUrl = finalImageUrl;
-  if (finalImageUrl) {
     try {
-      const bgResult = await removeBg(finalImageUrl, true);
-      if (bgResult.cleanImage) cleanImageUrl = bgResult.cleanImage;
+      const searchQuery = `${brand} ${name} single fragrance bottle no box HQ`;
+      const searchRes = await searchImageUrl(searchQuery);
+      if (searchRes && !searchRes.includes("unsplash-placeholder")) {
+        finalImageUrl = searchRes;
+      }
     } catch {
-      // keep original
+      finalImageUrl = fallback?.imageUrl;
+    }
+
+    cleanImageUrl = finalImageUrl;
+    if (finalImageUrl) {
+      try {
+        const bgResult = await removeBg(finalImageUrl, true);
+        if (bgResult.cleanImage) {
+          cleanImageUrl = bgResult.cleanImage;
+          usedSourceUrl = finalImageUrl;
+          // 3. Save to Firestore keyed by name+brand so future lookups skip this whole pipeline
+          await setCachedImageByName(finalBrand_pre, finalName_pre, cleanImageUrl, usedSourceUrl);
+        }
+      } catch {
+        // keep original url
+      }
     }
   }
 
