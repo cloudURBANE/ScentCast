@@ -51,7 +51,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
         />
         <motion.div
           initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-          className="relative w-full max-w-xl bg-white border border-scent-border shadow-2xl overflow-hidden"
+          className="relative w-full max-w-xl bg-white border border-scent-border shadow-2xl overflow-hidden z-10"
         >
           <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-scent-bg transition-colors border border-scent-border z-10">
             <X size={20} />

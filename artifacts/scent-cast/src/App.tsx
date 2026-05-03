@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { WeatherWidget } from './components/WeatherWidget';
 import { FragranceCapture } from './components/FragranceCapture';
 import { Wardrobe, Fragrance, DestinationType, EnergyState } from './components/Wardrobe';
-import { Wind, Play, X } from 'lucide-react';
+import { Wind, Play, X, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScentIntentModal } from './components/ScentIntentModal';
 import { LavaBackground } from './components/LavaBackground';
+import { AuthModal } from './components/AuthModal';
 
 interface WeatherData {
   temp: number;
@@ -46,14 +47,17 @@ const LiveClock: React.FC = () => {
 };
 
 export default function App() {
-  const [items, setItems] = React.useState<Fragrance[]>([]);
-  const [isIntentModalOpen, setIsIntentModalOpen] = React.useState(false);
-  const [activeRecommendation, setActiveRecommendation] = React.useState<Fragrance | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('scent_token'));
+  const [authEmail, setAuthEmail] = useState<string | null>(() => localStorage.getItem('scent_email'));
+  const [items, setItems] = useState<Fragrance[]>([]);
+  const [wardrobeLoaded, setWardrobeLoaded] = useState(false);
+  const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
+  const [activeRecommendation, setActiveRecommendation] = useState<Fragrance | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
 
-  const fetchWeather = React.useCallback(async (lat?: number, lon?: number) => {
+  const fetchWeather = useCallback(async (lat?: number, lon?: number) => {
     try {
       const url = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
       const response = await axios.get(url);
@@ -68,6 +72,45 @@ export default function App() {
   useEffect(() => {
     fetchWeather();
   }, [fetchWeather]);
+
+  const loadWardrobe = useCallback(async (token: string) => {
+    try {
+      const res = await fetch('/api/wardrobe', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data: Fragrance[] = await res.json();
+      setItems(data);
+    } catch {
+      // ignore
+    } finally {
+      setWardrobeLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authToken) {
+      loadWardrobe(authToken);
+    } else {
+      setWardrobeLoaded(true);
+    }
+  }, [authToken, loadWardrobe]);
+
+  const handleAuth = (token: string, email: string) => {
+    localStorage.setItem('scent_token', token);
+    localStorage.setItem('scent_email', email);
+    setAuthToken(token);
+    setAuthEmail(email);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('scent_token');
+    localStorage.removeItem('scent_email');
+    setAuthToken(null);
+    setAuthEmail(null);
+    setItems([]);
+    setWardrobeLoaded(false);
+  };
 
   const requestLocation = () => {
     if (!navigator.geolocation) { return; }
@@ -86,8 +129,8 @@ export default function App() {
     );
   };
 
-  const handleAddItem = (item: any) => {
-    setItems((prev) => [{
+  const handleAddItem = async (item: any) => {
+    const newItem: Fragrance = {
       ...item,
       notes: item.notes || ['Bergamot', 'Ambroxan', 'Pink Pepper'],
       concentration: item.concentration || 'Eau de Parfum',
@@ -96,11 +139,39 @@ export default function App() {
       performance: item.performance || { sillage: 6, longevity: 7 },
       pyramid: item.pyramid || { top: ['Bergamot', 'Pink Pepper'], heart: ['Lavender', 'Geranium'], base: ['Ambroxan', 'Patchouli'] },
       context: item.context || { weather: ['Universal'], time: ['Universal'], occasion: ['Daily Wear'] }
-    }, ...prev]);
+    };
+
+    setItems((prev) => [newItem, ...prev]);
+
+    if (authToken) {
+      try {
+        await fetch('/api/wardrobe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(newItem),
+        });
+      } catch {
+        // ignore - item is still in local state
+      }
+    }
   };
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     setItems((prev) => prev.filter(item => item.id !== id));
+
+    if (authToken) {
+      try {
+        await fetch(`/api/wardrobe/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+      } catch {
+        // ignore
+      }
+    }
   };
 
   const handleIntentComplete = (intent: { destination: DestinationType; energy: EnergyState }) => {
@@ -125,6 +196,10 @@ export default function App() {
     setTimeout(() => setActiveRecommendation(scores[0].item), 800);
   };
 
+  if (!authToken) {
+    return <AuthModal onAuth={handleAuth} />;
+  }
+
   return (
     <div className="min-h-screen bg-black selection:bg-scent-accent selection:text-black text-white relative overflow-x-hidden">
       <LavaBackground />
@@ -134,7 +209,12 @@ export default function App() {
             <Wind size={24} strokeWidth={1} className="text-white" />
             <h1 className="font-serif text-2xl italic tracking-tighter uppercase">Scent Cast</h1>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            {authEmail && (
+              <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold hidden sm:block">
+                {authEmail}
+              </span>
+            )}
             <button
               onClick={requestLocation}
               disabled={locationStatus === 'requesting' || locationStatus === 'granted'}
@@ -142,6 +222,13 @@ export default function App() {
               className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/30 transition-all disabled:cursor-default"
             >
               <span className={`w-2 h-2 rounded-full ${locationStatus === 'granted' ? 'bg-green-400' : locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/20'}`} />
+            </button>
+            <button
+              onClick={handleSignOut}
+              title="Sign Out"
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/30 transition-all text-white/30 hover:text-white"
+            >
+              <LogOut size={14} />
             </button>
           </div>
         </div>
