@@ -4,6 +4,7 @@ import { vectorize, calculatePerformance, calculateContext, type ScentVector, ty
 import { searchImageUrl } from "./imageService";
 import { removeBg } from "./bgService";
 import { getOrCreateCachedImage } from "./firebaseCache";
+import { getCatalogEntry, saveCatalogEntry } from "./catalogService";
 
 export interface ScentProfile {
   product: { name: string; brand: string; perfumer?: string };
@@ -63,7 +64,11 @@ export async function buildProfile(
     perfumer?: string;
   }
 ): Promise<ScentProfile | { error: string }> {
-  // Resolve image: check Firestore by name+brand first; on miss, run image
+  // 1. Check global catalog first — skip all AI/image work if we already have it
+  const cached = await getCatalogEntry(brand, name);
+  if (cached) return cached;
+
+  // 2. Resolve image: check Firestore by name+brand first; on miss, run image
   // search + remove.bg exactly once even if many users request simultaneously.
   const cleanImageUrl = await getOrCreateCachedImage(
     brand,
@@ -118,7 +123,7 @@ export async function buildProfile(
   const performance = calculatePerformance(vector, finalFamily, parsed.concentration);
   const context = calculateContext(vector);
 
-  return {
+  const profile: ScentProfile = {
     product: {
       name: finalName,
       brand: finalBrand,
@@ -135,4 +140,9 @@ export async function buildProfile(
     imageUrl: cleanImageUrl,
     description: finalDescription,
   };
+
+  // 3. Save to global catalog so future users skip all the above work
+  await saveCatalogEntry(finalBrand, finalName, profile).catch(() => { /* non-fatal */ });
+
+  return profile;
 }

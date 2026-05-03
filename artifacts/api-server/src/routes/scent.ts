@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getWeather } from "../services/weatherService";
 import { buildProfile, searchFragrances } from "../services/scentEngine";
 import { deepScrapeFragrance } from "../services/fallbackIntelligence";
+import { searchCatalog, getCatalogEntry, saveCatalogEntry, flattenProfile } from "../services/catalogService";
 import { ai } from "@workspace/integrations-gemini-ai";
 
 const router = Router();
@@ -47,6 +48,13 @@ router.post("/search-scent", async (req, res) => {
     return;
   }
 
+  // Check global catalog before hitting local dataset or scraper
+  const catalogHit = await searchCatalog(query);
+  if (catalogHit) {
+    res.json(catalogHit);
+    return;
+  }
+
   const local = searchFragrances(query);
   if (local.length > 0) {
     const first = local[0];
@@ -79,6 +87,14 @@ router.post("/gemini/search", async (req, res) => {
     return;
   }
 
+  // 1. Check catalog by free-text — handles "Creed Aventus", "Aventus", "Creed", etc.
+  const quickHit = await searchCatalog(query);
+  if (quickHit) {
+    res.json(flattenProfile(quickHit));
+    return;
+  }
+
+  // 2. Call AI to identify the fragrance
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
@@ -107,9 +123,7 @@ Be as accurate and complete as possible with notes and pyramid. Only return vali
         ]
       }
     ],
-    config: {
-      responseMimeType: "application/json"
-    }
+    config: { responseMimeType: "application/json" }
   });
 
   const text = response.text ?? "";
@@ -119,18 +133,25 @@ Be as accurate and complete as possible with notes and pyramid. Only return vali
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
-      try {
-        parsed = JSON.parse(match[0]);
-      } catch {
-        res.status(500).json({ error: "Failed to parse AI response" });
-        return;
-      }
+      try { parsed = JSON.parse(match[0]); }
+      catch { res.status(500).json({ error: "Failed to parse AI response" }); return; }
     } else {
       res.status(500).json({ error: "Failed to parse AI response" });
       return;
     }
   }
 
+  // 3. After AI identifies name+brand, check catalog with exact keys
+  //    This catches the case where AI normalized the name differently than the query
+  if (parsed.name && parsed.brand) {
+    const exactHit = await getCatalogEntry(parsed.brand, parsed.name);
+    if (exactHit) {
+      res.json(flattenProfile(exactHit));
+      return;
+    }
+  }
+
+  // 4. Fresh AI result — return it; /api/scent-profile will save it to the catalog
   res.json(parsed);
 });
 
@@ -175,9 +196,7 @@ Only return valid JSON, no markdown or extra text.`
         ]
       }
     ],
-    config: {
-      responseMimeType: "application/json"
-    }
+    config: { responseMimeType: "application/json" }
   });
 
   const text = response.text ?? "";
@@ -190,15 +209,27 @@ Only return valid JSON, no markdown or extra text.`
       try {
         parsed = JSON.parse(match[0]);
         if (!Array.isArray(parsed)) parsed = [parsed];
-      } catch {
-        parsed = [];
-      }
+      } catch { parsed = []; }
     } else {
       parsed = [];
     }
   }
 
-  res.json(Array.isArray(parsed) ? parsed : [parsed]);
+  const results: any[] = Array.isArray(parsed) ? parsed : [parsed];
+
+  // For each AI-identified fragrance, check if we already have a full catalog entry
+  // so the frontend gets the full profile (with scent_vector, imageUrl, etc.) immediately
+  const enriched = await Promise.all(
+    results.map(async (item: any) => {
+      if (item.name && item.brand) {
+        const hit = await getCatalogEntry(item.brand, item.name);
+        if (hit) return flattenProfile(hit);
+      }
+      return item;
+    })
+  );
+
+  res.json(enriched);
 });
 
 export default router;
