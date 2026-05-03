@@ -199,6 +199,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
       setMatches([]);
       setSelectedIdx(null);
       setHasSearched(false);
+      setSearchQuery("");
     }
   };
 
