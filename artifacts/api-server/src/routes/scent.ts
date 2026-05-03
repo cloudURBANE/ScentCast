@@ -5,6 +5,7 @@ import { deepScrapeFragrance } from "../services/fallbackIntelligence";
 import { searchCatalog, getCatalogEntry, saveCatalogEntry, flattenProfile } from "../services/catalogService";
 import { searchImageUrl } from "../services/imageService";
 import { removeBg } from "../services/bgService";
+import { logger } from "../lib/logger";
 import { ai } from "@workspace/integrations-gemini-ai";
 
 const router = Router();
@@ -247,25 +248,45 @@ router.post("/refresh-image", async (req, res) => {
     return;
   }
   try {
-    // Bypass all caches — force a fresh image search
-    const query = `${brand} ${name} single fragrance bottle no box HQ official product photo transparent background`;
+    // Normalize to ASCII so accented chars (é, ü, etc.) don't break URL parsing
+    const asciiName  = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "");
+    const asciiBrand = brand.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "");
+    const query = `${asciiBrand} ${asciiName} single perfume bottle no box product photo`;
+
     const rawUrl = await searchImageUrl(query);
     if (!rawUrl) {
       res.status(404).json({ error: "No image found for this fragrance" });
       return;
     }
-    const { cleanImage } = await removeBg(rawUrl, true);
-    const finalImageUrl = cleanImage ?? rawUrl;
+
+    // Validate the URL before passing it downstream — avoids "did not match pattern" from axios
+    let safeUrl: string;
+    try {
+      safeUrl = new URL(rawUrl).toString();
+    } catch {
+      res.status(422).json({ error: `Image URL invalid: ${rawUrl.slice(0, 80)}` });
+      return;
+    }
+
+    // Background removal is best-effort — a URL parse error here must not kill the route
+    let finalImageUrl = safeUrl;
+    try {
+      const { cleanImage } = await removeBg(safeUrl, true);
+      if (cleanImage) finalImageUrl = cleanImage;
+    } catch (bgErr: any) {
+      logger.warn({ err: bgErr.message }, "refresh-image: bg removal skipped, using raw URL");
+    }
 
     // Persist to global catalog so every future user gets the refreshed image
     const existing = await getCatalogEntry(brand, name);
     if (existing) {
       await saveCatalogEntry(brand, name, { ...existing, imageUrl: finalImageUrl });
     }
+
     res.json({ imageUrl: finalImageUrl });
   } catch (err: any) {
-    req.log.error(err, "refresh-image failed");
-    res.status(500).json({ error: "Image refresh failed" });
+    logger.error({ err: err.message }, "refresh-image failed");
+    res.status(500).json({ error: err.message || "Image refresh failed" });
   }
 });
 
