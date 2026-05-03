@@ -1,6 +1,8 @@
 import axios from "axios";
 import sharp from "sharp";
 
+const REMOVEBG_API = "https://api.remove.bg/v1.0/removebg";
+
 async function padAndCenter(buffer: Buffer): Promise<Buffer> {
   try {
     return await sharp(buffer)
@@ -27,47 +29,87 @@ async function trimWhiteAndNormalize(buffer: Buffer): Promise<Buffer> {
   }
 }
 
-async function callRemoveBgWithFile(buffer: Buffer, apiKey: string): Promise<Buffer | null> {
+function baseParams() {
+  return {
+    size: "auto",
+    type: "auto",
+    format: "png",
+    semitransparency: "true",
+  };
+}
+
+async function removeBgByUrl(imageUrl: string, apiKey: string): Promise<Buffer | null> {
   try {
     const FormData = (await import("form-data")).default;
-    const formData = new FormData();
-    formData.append("image_file", buffer, { filename: "image.jpg", contentType: "image/jpeg" });
-    formData.append("size", "auto");
-    formData.append("type", "product");
-    formData.append("format", "png");
+    const form = new FormData();
+    form.append("image_url", imageUrl);
+    Object.entries(baseParams()).forEach(([k, v]) => form.append(k, v));
 
-    const response = await axios.post("https://api.remove.bg/v1.0/removebg", formData, {
-      headers: { ...formData.getHeaders(), "X-Api-Key": apiKey },
+    const res = await axios.post(REMOVEBG_API, form, {
+      headers: { ...form.getHeaders(), "X-Api-Key": apiKey },
       responseType: "arraybuffer",
       timeout: 25000,
       validateStatus: (s) => s < 500,
     });
 
-    if (response.status === 200) return Buffer.from(response.data);
-    return null;
+    return res.status === 200 ? Buffer.from(res.data) : null;
   } catch {
     return null;
   }
 }
 
-async function callRemoveBgWithUrl(imageUrl: string, apiKey: string): Promise<Buffer | null> {
+async function removeBgByFile(buffer: Buffer, apiKey: string): Promise<Buffer | null> {
   try {
     const FormData = (await import("form-data")).default;
-    const formData = new FormData();
-    formData.append("image_url", imageUrl);
-    formData.append("size", "auto");
-    formData.append("type", "product");
-    formData.append("format", "png");
+    const form = new FormData();
+    form.append("image_file", buffer, { filename: "image.jpg", contentType: "image/jpeg" });
+    Object.entries(baseParams()).forEach(([k, v]) => form.append(k, v));
 
-    const response = await axios.post("https://api.remove.bg/v1.0/removebg", formData, {
-      headers: { ...formData.getHeaders(), "X-Api-Key": apiKey },
+    const res = await axios.post(REMOVEBG_API, form, {
+      headers: { ...form.getHeaders(), "X-Api-Key": apiKey },
       responseType: "arraybuffer",
       timeout: 25000,
       validateStatus: (s) => s < 500,
     });
 
-    if (response.status === 200) return Buffer.from(response.data);
+    return res.status === 200 ? Buffer.from(res.data) : null;
+  } catch {
     return null;
+  }
+}
+
+async function removeBgByBase64(b64: string, apiKey: string): Promise<Buffer | null> {
+  try {
+    const FormData = (await import("form-data")).default;
+    const form = new FormData();
+    // Use image_file_b64 as per the API docs — avoids binary encoding overhead
+    form.append("image_file_b64", b64);
+    Object.entries(baseParams()).forEach(([k, v]) => form.append(k, v));
+
+    const res = await axios.post(REMOVEBG_API, form, {
+      headers: { ...form.getHeaders(), "X-Api-Key": apiKey },
+      responseType: "arraybuffer",
+      timeout: 25000,
+      validateStatus: (s) => s < 500,
+    });
+
+    return res.status === 200 ? Buffer.from(res.data) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function downloadImage(url: string): Promise<Buffer | null> {
+  try {
+    const res = await axios.get(url, {
+      responseType: "arraybuffer",
+      timeout: 10000,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://www.google.com/",
+      },
+    });
+    return Buffer.from(res.data);
   } catch {
     return null;
   }
@@ -75,74 +117,58 @@ async function callRemoveBgWithUrl(imageUrl: string, apiKey: string): Promise<Bu
 
 export async function removeBg(input: string, isUrl = false) {
   const apiKey = process.env.REMOVE_BG_API_KEY;
-  const toDataUri = (buffer: Buffer, type = "image/png") =>
-    `data:${type};base64,${buffer.toString("base64")}`;
+  const toDataUri = (buf: Buffer) => `data:image/png;base64,${buf.toString("base64")}`;
 
-  if (!isUrl || !input.startsWith("http")) {
-    if (input.startsWith("data:")) {
-      const parts = input.split(",");
-      const raw = Buffer.from(parts[1], "base64");
-      if (!apiKey) {
-        const normalized = await trimWhiteAndNormalize(raw);
-        return { cleanImage: toDataUri(normalized) };
-      }
-      const result = await callRemoveBgWithFile(raw, apiKey);
-      if (result) {
-        const padded = await padAndCenter(result);
-        return { cleanImage: toDataUri(padded) };
-      }
+  // --- Handle base64 / data URI inputs ---
+  if (!isUrl || input.startsWith("data:")) {
+    const b64 = input.startsWith("data:") ? input.split(",")[1] : null;
+    if (!b64) return { cleanImage: input };
+
+    if (!apiKey) {
+      const normalized = await trimWhiteAndNormalize(Buffer.from(b64, "base64"));
+      return { cleanImage: toDataUri(normalized) };
+    }
+
+    // Use image_file_b64 directly per the docs
+    const result = await removeBgByBase64(b64, apiKey);
+    if (result) {
+      const padded = await padAndCenter(result);
+      return { cleanImage: toDataUri(padded) };
+    }
+
+    // Fallback: local normalize
+    const normalized = await trimWhiteAndNormalize(Buffer.from(b64, "base64"));
+    return { cleanImage: toDataUri(normalized) };
+  }
+
+  // --- Handle http/https URL inputs ---
+  if (!apiKey) {
+    const raw = await downloadImage(input);
+    if (raw) {
       const normalized = await trimWhiteAndNormalize(raw);
       return { cleanImage: toDataUri(normalized) };
     }
     return { cleanImage: input };
   }
 
-  if (!apiKey) {
-    // No API key — try to download and trim white background locally
-    try {
-      const res = await axios.get(input, {
-        responseType: "arraybuffer",
-        timeout: 8000,
-        headers: { "User-Agent": "Mozilla/5.0" },
-      });
-      const normalized = await trimWhiteAndNormalize(Buffer.from(res.data));
-      return { cleanImage: toDataUri(normalized) };
-    } catch {
-      return { cleanImage: input };
-    }
-  }
-
-  // Strategy 1: Try sending URL directly to remove.bg (works when CDN allows it)
-  const byUrl = await callRemoveBgWithUrl(input, apiKey);
+  // Strategy 1: send the URL directly to remove.bg (cheapest, works when CDN is public)
+  const byUrl = await removeBgByUrl(input, apiKey);
   if (byUrl) {
     const padded = await padAndCenter(byUrl);
     return { cleanImage: toDataUri(padded) };
   }
 
-  // Strategy 2: Download the image ourselves and send as file
-  let rawBuffer: Buffer | null = null;
-  try {
-    const res = await axios.get(input, {
-      responseType: "arraybuffer",
-      timeout: 8000,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://www.google.com/",
-      },
-    });
-    rawBuffer = Buffer.from(res.data);
-  } catch {
-    // can't download — return original URL as-is
-    return { cleanImage: input };
-  }
+  // Strategy 2: download ourselves, send as binary file
+  const raw = await downloadImage(input);
+  if (!raw) return { cleanImage: input };
 
-  const byFile = await callRemoveBgWithFile(rawBuffer, apiKey);
+  const byFile = await removeBgByFile(raw, apiKey);
   if (byFile) {
     const padded = await padAndCenter(byFile);
     return { cleanImage: toDataUri(padded) };
   }
 
-  // Strategy 3: Local white-trim normalization as last resort
-  const normalized = await trimWhiteAndNormalize(rawBuffer);
+  // Strategy 3: local white-trim normalization as last resort
+  const normalized = await trimWhiteAndNormalize(raw);
   return { cleanImage: toDataUri(normalized) };
 }
