@@ -175,22 +175,22 @@ router.post("/gemini/vision", async (req, res) => {
             }
           },
           {
-            text: `This is an image of a perfume or fragrance bottle. Identify all visible fragrances and return a JSON array.
-Each object in the array should have:
+            text: `This is an image of a perfume or fragrance bottle. Identify the single most prominent fragrance bottle visible. Focus only on standalone bottles — ignore boxes, gift sets, multi-bottle collections, or packaging. Return a JSON array with exactly ONE object for the primary bottle:
 {
   "name": "exact product name",
   "brand": "brand or perfume house name",
   "perfumer": "name of the nose / perfumer who created it, or empty string if unknown",
-  "family": "primary fragrance family",
+  "family": "primary fragrance family (e.g. Woody, Floral, Oriental, Fresh, Citrus, Fougere, Chypre, Gourmand, Amber, Aquatic)",
   "notes": ["complete", "flat", "list", "of", "all", "notes"],
-  "description": "brief evocative description of the scent",
+  "description": "two to three sentence evocative description of the scent character",
   "pyramid": {
-    "top": ["top note 1"],
-    "heart": ["heart note 1"],
-    "base": ["base note 1"]
-  }
+    "top": ["top note 1", "top note 2"],
+    "heart": ["heart note 1", "heart note 2"],
+    "base": ["base note 1", "base note 2"]
+  },
+  "accords": ["dominant accord 1", "dominant accord 2"]
 }
-If you cannot identify the fragrance, return an empty array [].
+If you cannot confidently identify the fragrance bottle, return an empty array [].
 Only return valid JSON, no markdown or extra text.`
           }
         ]
@@ -217,15 +217,21 @@ Only return valid JSON, no markdown or extra text.`
 
   const results: any[] = Array.isArray(parsed) ? parsed : [parsed];
 
-  // For each AI-identified fragrance, check if we already have a full catalog entry
-  // so the frontend gets the full profile (with scent_vector, imageUrl, etc.) immediately
+  // Build a full profile for each AI-identified fragrance.
+  // buildProfile checks the catalog first, then runs image search + bg removal.
+  // This ensures the frontend always receives scent_vector, imageUrl, and full metadata.
   const enriched = await Promise.all(
     results.map(async (item: any) => {
-      if (item.name && item.brand) {
-        const hit = await getCatalogEntry(item.brand, item.name);
-        if (hit) return flattenProfile(hit);
-      }
-      return item;
+      if (!item.name || !item.brand) return item;
+      const profile = await buildProfile(item.name, item.brand, {
+        notes: item.notes,
+        family: item.family,
+        description: item.description,
+        pyramid: item.pyramid,
+        perfumer: item.perfumer,
+      });
+      if ("error" in profile) return item;
+      return flattenProfile(profile);
     })
   );
 

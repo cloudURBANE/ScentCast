@@ -135,7 +135,9 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
       const results = await res.json();
       if (results && results.length > 0) {
         setHasSearched(true);
-        setMatches(results.map((r: any) => ({ ...r, imageUrl: preview })));
+        // Use the backend-supplied product imageUrl when available;
+        // only fall back to the user's photo if none came back
+        setMatches(results.map((r: any) => ({ ...r, imageUrl: r.imageUrl || preview })));
         setSelectedIdx(0);
       } else {
         setErrorStatus("Could not identify this bottle. Try a clearer photo.");
@@ -163,13 +165,31 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
           const profileRes = await fetch('/api/scent-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: selected.name, brand: selected.brand, imageUrl: selected.imageUrl })
+            // Pass all known AI-identified data so buildProfile can construct
+            // a full profile even for fragrances not in the local dataset.
+            // Never pass the user's photo blob URL as imageUrl — the server
+            // cannot access local blob URLs; omit it and let the server search.
+            body: JSON.stringify({
+              name: selected.name,
+              brand: selected.brand,
+              notes: (selected as any).notes,
+              family: (selected as any).family,
+              description: (selected as any).description,
+              pyramid: (selected as any).pyramid,
+              perfumer: (selected as any).perfumer,
+            })
           });
           if (!profileRes.ok) throw new Error(`HTTP ${profileRes.status}`);
           const data = await profileRes.json();
-          onAdd({ ...data, id: Math.random().toString(36).substr(2, 9), season: 'Universal' });
+          if (data && !data.error) {
+            onAdd({ ...data, id: Math.random().toString(36).substr(2, 9), season: 'Universal' });
+          } else {
+            setErrorStatus(data?.error || "Could not sync to vault. Please try again.");
+            return;
+          }
         } catch (err) {
-          console.error("Final sync failed", err);
+          setErrorStatus("Vault sync failed. Please check your connection.");
+          return;
         } finally {
           setUploading(false);
         }
