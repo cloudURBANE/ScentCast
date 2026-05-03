@@ -31,7 +31,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
 
   const handleNext = () => {
     if (step === 1 && destination) setStep(2);
-    else if (step === 2 && energy) {
+    else if (step === 2 && destination && energy) {
       onComplete({ destination, energy });
       setStep(1);
       setDestination(null);
@@ -72,6 +72,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {DESTINATIONS.map((d) => (
                       <button
+                        type="button"
                         key={d.type}
                         onClick={() => setDestination(d.type)}
                         className={`p-6 border text-left flex items-start gap-4 transition-all ${destination === d.type ? 'border-scent-accent bg-scent-accent/5' : 'border-scent-border hover:border-scent-muted'}`}
@@ -94,6 +95,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {ENERGIES.map((e) => (
                       <button
+                        type="button"
                         key={e.type}
                         onClick={() => setEnergy(e.type)}
                         className={`p-6 border text-left flex items-start gap-4 transition-all ${energy === e.type ? 'border-scent-accent bg-scent-accent/5' : 'border-scent-border hover:border-scent-muted'}`}
