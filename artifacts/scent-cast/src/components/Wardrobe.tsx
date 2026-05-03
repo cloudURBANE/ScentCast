@@ -39,12 +39,16 @@ export const Wardrobe: React.FC<{
   const [selectedItem, setSelectedItem] = React.useState<Fragrance | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.family?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.notes?.some(note => note.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredItems = items.filter(item => {
+    if (!item?.name || !item?.brand) return false;
+    const q = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(q) ||
+      item.brand.toLowerCase().includes(q) ||
+      item.family?.toLowerCase().includes(q) ||
+      item.notes?.some(note => note?.toLowerCase().includes(q))
+    );
+  });
 
   const itemsPerShelf = 4;
   const shelves = [];
