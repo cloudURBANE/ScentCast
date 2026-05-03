@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
+import { apiUrl } from '@/lib/apiBase';
 import { FragranceCapture } from './components/FragranceCapture';
 import { Wardrobe, Fragrance, DestinationType, EnergyState } from './components/Wardrobe';
 import { Wind, Play, X, LogOut, Share2 } from 'lucide-react';
@@ -9,6 +10,7 @@ import { LavaBackground } from './components/LavaBackground';
 import { AuthModal } from './components/AuthModal';
 import { SharePage } from './components/SharePage';
 import { ShareModal } from './components/ShareModal';
+import { toast } from 'sonner';
 
 interface WeatherData {
   temp: number;
@@ -125,10 +127,30 @@ export default function App() {
   const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [userId, setUserId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("oauth_error");
+    if (!err) return;
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${window.location.hash}`,
+    );
+    const messages: Record<string, string> = {
+      no_code: "Google sign-in was cancelled.",
+      token_exchange:
+        "Google sign-in failed. In Google Cloud Console, set Authorized redirect URI to: your API_PUBLIC_URL + /api/auth/google/callback (e.g. http://localhost:8080/api/auth/google/callback).",
+      user_info: "Could not load your Google profile.",
+      missing_email: "Google did not provide an email.",
+      server_error: "Sign-in failed on the server.",
+    };
+    toast.error(messages[err] ?? `Sign-in error: ${err}`);
+  }, []);
+
   const fetchWeather = useCallback(async (lat?: number, lon?: number) => {
     try {
-      const url = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
-      const response = await axios.get(url);
+      const path = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
+      const response = await axios.get(apiUrl(path));
       setWeather(response.data);
     } catch (err) {
       console.error("Failed to fetch weather", err);
@@ -159,7 +181,7 @@ export default function App() {
 
   const loadWardrobe = useCallback(async (token: string) => {
     try {
-      const res = await fetch('/api/wardrobe', {
+      const res = await fetch(apiUrl('/api/wardrobe'), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -175,7 +197,7 @@ export default function App() {
   useEffect(() => {
     if (authToken) {
       loadWardrobe(authToken);
-      fetch('/api/share-settings', { headers: { Authorization: `Bearer ${authToken}` } })
+      fetch(apiUrl('/api/share-settings'), { headers: { Authorization: `Bearer ${authToken}` } })
         .then(r => r.json())
         .then(d => { if (d.userId) setUserId(d.userId); })
         .catch(() => {});
@@ -233,7 +255,7 @@ export default function App() {
 
     if (authToken) {
       try {
-        await fetch('/api/wardrobe', {
+        await fetch(apiUrl('/api/wardrobe'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -256,7 +278,7 @@ export default function App() {
 
     if (authToken) {
       try {
-        await fetch(`/api/wardrobe/${id}`, {
+        await fetch(apiUrl(`/api/wardrobe/${id}`), {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${authToken}` },
         });

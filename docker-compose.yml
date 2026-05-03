@@ -1,0 +1,17 @@
+# Local PostgreSQL for Scent Cast (users, wardrobe, settings).
+# Start: pnpm run db:up
+# Then: pnpm run db:push
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: scentcast
+      POSTGRES_PASSWORD: scentcast
+      POSTGRES_DB: scentcast
+    volumes:
+      - scentcast_pg:/var/lib/postgresql/data
+
+volumes:
+  scentcast_pg:

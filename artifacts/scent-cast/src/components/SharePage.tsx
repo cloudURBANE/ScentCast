@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Wind, ShoppingBag, ShieldCheck, Wind as WindIcon } from 'lucide-react';
 import { LavaBackground } from './LavaBackground';
+import { apiUrl } from '@/lib/apiBase';
 
 interface ScentVector {
   freshness: number;
@@ -43,7 +44,7 @@ export const SharePage: React.FC<{ userId: string }> = ({ userId }) => {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/share/${userId}`)
+    fetch(apiUrl(`/api/share/${userId}`))
       .then(r => r.json())
       .then(d => {
         if (d.error) throw new Error(d.error);

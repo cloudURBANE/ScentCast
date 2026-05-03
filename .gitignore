@@ -8,8 +8,20 @@ out-tsc
 .expo
 .expo-shared
 
+# Local secrets (never commit)
+.env
+.env.*
+!.env.example
+artifacts/scent-cast/.env
+artifacts/scent-cast/.env.*
+
 # dependencies
 node_modules
+
+# Firebase service account (never commit)
+*-firebase-adminsdk-*.json
+**/serviceAccount*.json
+firebase-adminsdk.json
 
 # IDEs and editors
 /.idea
@@ -47,3 +59,5 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+.vercel

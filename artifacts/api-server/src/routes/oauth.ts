@@ -5,7 +5,13 @@ import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
-function getBaseUrl(req: import("express").Request): string {
+/** Public origin of this API (used for Google OAuth redirect_uri). */
+function getApiPublicUrl(req: import("express").Request): string {
+  const explicit =
+    process.env.API_PUBLIC_URL?.trim() || process.env.OAUTH_REDIRECT_ORIGIN?.trim();
+  if (explicit) {
+    return explicit.replace(/\/+$/, "");
+  }
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) {
     return `https://${domains.split(",")[0]}`;
@@ -17,6 +23,17 @@ function getBaseUrl(req: import("express").Request): string {
   return `${req.protocol}://${req.get("host")}`;
 }
 
+/** Where to send the user after OAuth (Vercel app when API is on another host). */
+function getFrontendBaseUrl(req: import("express").Request): string {
+  const fromEnv =
+    process.env.PUBLIC_APP_URL?.trim() ||
+    process.env.FRONTEND_URL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/+$/, "");
+  }
+  return getApiPublicUrl(req);
+}
+
 router.get("/auth/google", (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) {
@@ -24,7 +41,7 @@ router.get("/auth/google", (req, res) => {
     return;
   }
 
-  const redirectUri = `${getBaseUrl(req)}/api/auth/google/callback`;
+  const redirectUri = `${getApiPublicUrl(req)}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -48,12 +65,12 @@ router.get("/auth/google/callback", async (req, res) => {
 
   const code = req.query.code as string | undefined;
   if (!code) {
-    res.redirect("/?oauth_error=no_code");
+    res.redirect(`${getFrontendBaseUrl(req)}/?oauth_error=no_code`);
     return;
   }
 
   try {
-    const redirectUri = `${getBaseUrl(req)}/api/auth/google/callback`;
+    const redirectUri = `${getApiPublicUrl(req)}/api/auth/google/callback`;
 
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -68,7 +85,7 @@ router.get("/auth/google/callback", async (req, res) => {
     });
 
     if (!tokenRes.ok) {
-      res.redirect("/?oauth_error=token_exchange");
+      res.redirect(`${getFrontendBaseUrl(req)}/?oauth_error=token_exchange`);
       return;
     }
 
@@ -79,7 +96,7 @@ router.get("/auth/google/callback", async (req, res) => {
     });
 
     if (!userRes.ok) {
-      res.redirect("/?oauth_error=user_info");
+      res.redirect(`${getFrontendBaseUrl(req)}/?oauth_error=user_info`);
       return;
     }
 
@@ -90,7 +107,7 @@ router.get("/auth/google/callback", async (req, res) => {
     };
 
     if (!googleUser.email || !googleUser.sub) {
-      res.redirect("/?oauth_error=missing_email");
+      res.redirect(`${getFrontendBaseUrl(req)}/?oauth_error=missing_email`);
       return;
     }
 
@@ -131,10 +148,10 @@ router.get("/auth/google/callback", async (req, res) => {
       oauth_email: user.email,
     });
 
-    res.redirect(`/?${params}`);
+    res.redirect(`${getFrontendBaseUrl(req)}/?${params}`);
   } catch (err) {
     req.log.error(err, "Google OAuth callback error");
-    res.redirect("/?oauth_error=server_error");
+    res.redirect(`${getFrontendBaseUrl(req)}/?oauth_error=server_error`);
   }
 });
 

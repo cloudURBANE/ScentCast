@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Search, RefreshCw, Upload, X, Loader2, Check } from 'lucide-react';
+import { apiUrl } from '@/lib/apiBase';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface FragranceMatch {
@@ -45,7 +46,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
     setErrorStatus(null);
     setHasSearched(false);
     try {
-      const geminiRes = await fetch('/api/gemini/search', {
+      const geminiRes = await fetch(apiUrl('/api/gemini/search'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: searchQuery }),
@@ -55,7 +56,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
       setHasSearched(true);
       setLoadingStatus(`Found: ${profileData.brand} ${profileData.name}`);
 
-      const profileRes = await fetch('/api/scent-profile', {
+      const profileRes = await fetch(apiUrl('/api/scent-profile'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -84,7 +85,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
     } catch (err: any) {
       try {
         setLoadingStatus("Retrying via Fallback Engine...");
-        const res = await fetch('/api/search-scent', {
+        const res = await fetch(apiUrl('/api/search-scent'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: searchQuery }),
@@ -126,7 +127,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
     setHasSearched(false);
     try {
       const base64 = await fileToBase64(file);
-      const res = await fetch('/api/gemini/vision', {
+      const res = await fetch(apiUrl('/api/gemini/vision'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64, mimeType: file.type }),
@@ -162,7 +163,7 @@ export const FragranceCapture: React.FC<{ onAdd?: (item: any) => void }> = ({ on
         setUploading(true);
         setLoadingStatus("Finalizing Neural Link...");
         try {
-          const profileRes = await fetch('/api/scent-profile', {
+          const profileRes = await fetch(apiUrl('/api/scent-profile'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             // Pass all known AI-identified data so buildProfile can construct

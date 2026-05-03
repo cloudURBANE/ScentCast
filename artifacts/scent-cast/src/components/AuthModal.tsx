@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Wind } from 'lucide-react';
+import { googleOAuthAuthorizeUrl } from '@/lib/apiBase';
 
 interface AuthModalProps {
   onAuth: (token: string, email: string) => void;
@@ -8,7 +9,7 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = () => {
   const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google';
+    window.location.href = googleOAuthAuthorizeUrl();
   };
 
   return (

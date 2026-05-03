@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, ShieldCheck, Wind, Check, RefreshCw, Zap } from 'lucide-react';
+import { apiUrl } from '@/lib/apiBase';
 
 export interface ScentVector {
   freshness: number;
@@ -61,7 +62,7 @@ export const Wardrobe: React.FC<{
     setSynthesizingId(item.id);
     setSynthesisError(null);
     try {
-      const res = await fetch(`/api/wardrobe/${item.id}/synthesize`, {
+      const res = await fetch(apiUrl(`/api/wardrobe/${item.id}/synthesize`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +92,7 @@ export const Wardrobe: React.FC<{
     setRefreshingId(item.id);
     setRefreshError(null);
     try {
-      const res = await fetch('/api/refresh-image', {
+      const res = await fetch(apiUrl('/api/refresh-image'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: item.name, brand: item.brand }),

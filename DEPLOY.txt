@@ -1,0 +1,88 @@
+Local development (full stack)
+================================
+
+1) Install Node.js 22 LTS (or ≥20.19) — Vite 7 / this repo won’t run on Node 18.
+   Then: npx pnpm install
+
+2) Postgres — pick one:
+   • Fast: Neon or Supabase free tier → paste connection string into .env as DATABASE_URL (use ?sslmode=require if asked).
+   • Local: pnpm run db:up   (Docker Desktop must be running; can be slow on Windows)
+
+3) Schema: pnpm run db:push   (loads repo root .env automatically)
+
+4) Terminal A — API: pnpm run dev:api
+
+5) Terminal B — UI: pnpm run dev:web   (Vite proxies /api → http://127.0.0.1:8080)
+
+6) Google OAuth (local): set API_PUBLIC_URL=http://localhost:8080 in .env (already wired for redirect_uri).
+   Google Cloud → Credentials → your OAuth Web client:
+   • Authorized JavaScript origins: http://localhost:5173
+   • Authorized redirect URIs: http://localhost:8080/api/auth/google/callback
+
+7) Optional: Gemini bridge on http://localhost:1106 (or change AI_INTEGRATIONS_* in .env)
+
+
+Production (Vercel UI + Render API)
+===================================
+
+What to create on Render (and what to skip)
+-------------------------------------------
+• DO:  One “Web Service” for the Express API (this repo’s render.yaml does that).
+• SKIP: “Create a Postgres database” on Render if you already use Supabase — keep one DATABASE_URL.
+• SKIP: “Static Site” on Render if the UI is on Vercel (already set up). Use Vercel for the SPA.
+
+A) Deploy API with Blueprint (easiest)
+----------------------------------------
+1) Push this repo to GitHub (or GitLab/Bitbucket Render supports).
+2) https://dashboard.render.com → New + → Blueprint.
+3) Connect the repo; Render finds render.yaml at the repo root → Review → Apply.
+4) Wait for the first build. Note the live URL: https://YOUR-SERVICE.onrender.com
+
+B) Deploy API manually (same result as YAML)
+---------------------------------------------
+New + → Web Service → connect repo.
+• Root Directory: leave default (repository root).
+• Runtime: Node
+• Build Command:
+  pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+• Start Command:
+  pnpm --filter @workspace/api-server run start
+• Instance type: Free (optional)
+
+C) Render → Environment tab (paste from your secrets; never commit .env)
+-----------------------------------------------------------------------
+Required for the API:
+  DATABASE_URL               = Supabase Session pooler URI (or Neon), same as local prod DB
+  API_PUBLIC_URL             = https://YOUR-SERVICE.onrender.com  (no trailing slash)
+  PUBLIC_APP_URL             = https://your-app.vercel.app
+  FRONTEND_URL               = same as PUBLIC_APP_URL
+  CORS_ORIGIN                = https://your-app.vercel.app
+  GOOGLE_CLIENT_ID           = (OAuth web client ID)
+  GOOGLE_CLIENT_SECRET       = (OAuth secret)
+  AI_INTEGRATIONS_GEMINI_*   = production Gemini URLs/keys if you use them
+
+Do NOT set on Render (unless you really need it):
+  DATABASE_SSL_REJECT_UNAUTHORIZED=false
+
+Render injects PORT automatically — no need to set it.
+
+Optional: GEMINI/OpenWeather/Google CSE/etc. — see .env.example
+
+D) Google Cloud OAuth (production)
+------------------------------------
+Authorized redirect URIs must include exactly:
+  https://YOUR-SERVICE.onrender.com/api/auth/google/callback
+Authorized JavaScript origins:
+  https://your-app.vercel.app
+
+E) Vercel (frontend)
+--------------------
+Environment Variables → Production:
+  VITE_API_ORIGIN   = https://YOUR-SERVICE.onrender.com
+  VITE_OAUTH_ORIGIN = https://YOUR-SERVICE.onrender.com
+Redeploy the frontend after saving.
+
+F) Smoke test
+-------------
+• https://YOUR-SERVICE.onrender.com/api/healthz  → JSON ok
+• Open Vercel URL → Sign in with Google → should return to Vercel with tokens

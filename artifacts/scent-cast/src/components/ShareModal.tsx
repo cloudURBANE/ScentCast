@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Link, Check, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
+import { apiUrl } from '@/lib/apiBase';
 
 interface FragranceItem {
   id: string;
@@ -57,7 +58,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     setPendingIds(prev => new Set(prev).add(item.id));
     onToggleVisibility(item.id, newHidden);
     try {
-      await fetch(`/api/wardrobe/${item.id}/visibility`, {
+      await fetch(apiUrl(`/api/wardrobe/${item.id}/visibility`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

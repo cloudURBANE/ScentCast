@@ -1,10 +1,28 @@
 import express, { type Express } from "express";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+app.set("trust proxy", 1);
+
+function corsOrigin(): CorsOptions["origin"] {
+  const raw = process.env.CORS_ORIGIN?.trim();
+  if (!raw || raw === "*") return true;
+  const list = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  if (list.length === 0) return true;
+  if (list.length === 1) return list[0];
+  return list;
+}
+
+app.use(
+  cors({
+    origin: corsOrigin(),
+    credentials: true,
+  }),
+);
 
 app.use(
   pinoHttp({
@@ -25,7 +43,6 @@ app.use(
     },
   }),
 );
-app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 

@@ -1,0 +1,16 @@
+# Render Blueprint: Dashboard → New → Blueprint → select this repo → apply (creates the Web Service below).
+# Database: use your existing Supabase Postgres — do NOT add “Postgres on Render” unless you want a second DB.
+# After first deploy, copy the service URL (e.g. https://scent-cast-api.onrender.com) into:
+#   Render env: API_PUBLIC_URL, CORS_ORIGIN + Vercel: VITE_API_ORIGIN, VITE_OAUTH_ORIGIN
+services:
+  - type: web
+    name: scent-cast-api
+    runtime: node
+    plan: free
+    region: oregon
+    healthCheckPath: /api/healthz
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    envVars:
+      - key: NODE_VERSION
+        value: "22.12.0"

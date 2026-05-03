@@ -4,30 +4,22 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
+// Cloud hosts (e.g. Vercel) run `vite build` without PORT; dev/preview use PORT or a local default.
+const rawPort = process.env.PORT ?? "5173";
 const port = Number(rawPort);
-
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
+// Default "/" for static hosting; Replit can still set BASE_PATH via env.
+const basePath = process.env.BASE_PATH ?? "/";
 
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Dev: forward /api to the Express server so the UI can use relative URLs without VITE_API_ORIGIN.
+const devApiProxy = process.env.VITE_DEV_API_PROXY ?? "http://127.0.0.1:8080";
 
 export default defineConfig({
   base: basePath,
+  envDir: path.resolve(import.meta.dirname, "../.."),
   plugins: [
     react(),
     tailwindcss(),
@@ -63,6 +55,9 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
+    proxy: {
+      "/api": { target: devApiProxy, changeOrigin: true },
+    },
     fs: {
       strict: true,
     },
@@ -71,5 +66,8 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    proxy: {
+      "/api": { target: devApiProxy, changeOrigin: true },
+    },
   },
 });

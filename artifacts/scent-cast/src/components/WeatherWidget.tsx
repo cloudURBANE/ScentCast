@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Cloud, Droplets } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { apiUrl } from '@/lib/apiBase';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 
@@ -75,8 +76,8 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ weather: propWeath
     let isMounted = true;
     async function fetchWeather(lat?: number, lon?: number) {
       try {
-        const url = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
-        const response = await axios.get(url);
+        const path = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
+        const response = await axios.get(apiUrl(path));
         if (isMounted) setInternalWeather(response.data);
       } catch {
         if (isMounted) setInternalWeather({ temp: 68.4, humidity: 45, condition: "Controlled Environment", location: "Local Sandbox", isLive: false });
