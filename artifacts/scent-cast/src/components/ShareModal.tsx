@@ -1,51 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Link, Check, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { X, Link, Check, Eye, EyeOff, ExternalLink, Search } from 'lucide-react';
+
+interface FragranceItem {
+  id: string;
+  name: string;
+  brand: string;
+  imageUrl?: string;
+  shareHidden?: boolean;
+}
 
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string | null;
   authToken: string | null;
+  items: FragranceItem[];
+  onToggleVisibility: (id: string, hidden: boolean) => void;
 }
 
-export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, userId, authToken }) => {
-  const [hideImages, setHideImages] = useState(false);
+export const ShareModal: React.FC<ShareModalProps> = ({
+  isOpen,
+  onClose,
+  userId,
+  authToken,
+  items = [],
+  onToggleVisibility,
+}) => {
   const [copied, setCopied] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const shareUrl = userId
-    ? `${window.location.origin}/share/${userId}`
-    : '';
+  const shareUrl = userId ? `${window.location.origin}/share/${userId}` : '';
+
+  const visibleCount = items.filter(i => !i.shareHidden).length;
 
   useEffect(() => {
-    if (!isOpen || !authToken) return;
-    setLoading(true);
-    fetch('/api/share-settings', {
-      headers: { Authorization: `Bearer ${authToken}` },
-    })
-      .then(r => r.json())
-      .then(d => { if (typeof d.hideImages === 'boolean') setHideImages(d.hideImages); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [isOpen, authToken]);
+    if (isOpen) {
+      setSearch('');
+      setTimeout(() => searchRef.current?.focus(), 150);
+    }
+  }, [isOpen]);
 
-  const handleToggleHideImages = async (val: boolean) => {
-    setHideImages(val);
-    setSaving(true);
+  const filtered = items.filter(item => {
+    const q = search.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(q) ||
+      item.brand.toLowerCase().includes(q)
+    );
+  });
+
+  const handleToggle = async (item: FragranceItem) => {
+    const newHidden = !item.shareHidden;
+    setPendingIds(prev => new Set(prev).add(item.id));
+    onToggleVisibility(item.id, newHidden);
     try {
-      await fetch('/api/share-settings', {
-        method: 'POST',
+      await fetch(`/api/wardrobe/${item.id}/visibility`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        body: JSON.stringify({ hideImages: val }),
+        body: JSON.stringify({ shareHidden: newHidden }),
       });
     } catch {
     } finally {
-      setSaving(false);
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
     }
   };
 
@@ -56,10 +81,24 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, userId,
     });
   };
 
+  const handleHideAll = async () => {
+    const visible = items.filter(i => !i.shareHidden);
+    for (const item of visible) {
+      await handleToggle(item);
+    }
+  };
+
+  const handleShowAll = async () => {
+    const hidden = items.filter(i => i.shareHidden);
+    for (const item of hidden) {
+      await handleToggle(item);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -68,86 +107,153 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, userId,
             className="absolute inset-0 bg-black/90 backdrop-blur-2xl"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 12 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full max-w-md mx-6 bg-neutral-900 border border-white/10 rounded-[1.5rem] overflow-hidden shadow-2xl"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full sm:max-w-lg mx-0 sm:mx-6 bg-neutral-950 border-t sm:border border-white/10 sm:rounded-[1.5rem] overflow-hidden shadow-2xl flex flex-col"
+            style={{ maxHeight: '90dvh' }}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-scent-accent animate-pulse" />
-                <p className="text-[9px] uppercase tracking-[0.5em] text-scent-accent font-bold">Share Vault</p>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-scent-accent animate-pulse shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase tracking-[0.5em] text-scent-accent font-bold">Share Vault</p>
+                  <p className="text-[9px] text-white/25 mt-0.5 font-sans">
+                    {visibleCount} of {items.length} visible
+                  </p>
+                </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 bg-white/5 hover:bg-white/10 transition-all rounded-full border border-white/10 text-white group"
+                className="p-2 bg-white/5 hover:bg-white/10 transition-all rounded-full border border-white/10 text-white group shrink-0 ml-3"
               >
                 <X size={16} className="group-hover:rotate-90 transition-transform duration-300" />
               </button>
             </div>
 
-            <div className="px-6 py-6 space-y-6">
-              <div className="space-y-2">
-                <p className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">Your Share Link</p>
-                <div className="flex gap-2">
-                  <div className="flex-1 bg-white/[0.03] border border-white/10 px-4 py-3 text-[11px] text-white/50 font-mono truncate rounded-none select-all">
-                    {shareUrl}
-                  </div>
-                  <button
-                    onClick={handleCopy}
-                    className="px-4 py-3 bg-white text-black text-[9px] uppercase tracking-[0.3em] font-bold flex items-center gap-2 hover:bg-white/90 active:scale-[0.97] transition-all shrink-0"
-                  >
-                    {copied ? <><Check size={11} /> Copied</> : <><Link size={11} /> Copy</>}
-                  </button>
+            {/* Link row */}
+            <div className="px-6 pt-5 pb-4 shrink-0 space-y-3 border-b border-white/5">
+              <div className="flex gap-2">
+                <div className="flex-1 bg-white/[0.03] border border-white/10 px-4 py-3 text-[10px] text-white/40 font-mono truncate select-all">
+                  {shareUrl || '—'}
                 </div>
+                <button
+                  onClick={handleCopy}
+                  className="px-4 py-3 bg-white text-black text-[9px] uppercase tracking-[0.3em] font-bold flex items-center gap-2 hover:bg-white/90 active:scale-[0.97] transition-all shrink-0"
+                >
+                  {copied ? <><Check size={11} /> Copied</> : <><Link size={11} /> Copy</>}
+                </button>
               </div>
-
               <a
                 href={shareUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 border border-white/10 text-white/40 hover:text-white hover:border-white/30 transition-all text-[9px] uppercase tracking-[0.35em] font-bold"
+                className="flex items-center justify-center gap-2 w-full py-2.5 border border-white/8 text-white/30 hover:text-white hover:border-white/20 transition-all text-[9px] uppercase tracking-[0.35em] font-bold"
               >
-                <ExternalLink size={11} />
-                Preview Your Vault
+                <ExternalLink size={10} />
+                Preview Shared Page
               </a>
+            </div>
 
-              <div className="border-t border-white/5 pt-6 space-y-4">
-                <p className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">Visibility Settings</p>
-                {loading ? (
-                  <div className="h-12 bg-white/[0.02] animate-pulse rounded-none" />
-                ) : (
-                  <button
-                    onClick={() => handleToggleHideImages(!hideImages)}
-                    disabled={saving}
-                    className="flex items-center justify-between w-full px-4 py-4 bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      {hideImages ? (
-                        <EyeOff size={14} className="text-white/40 shrink-0" />
-                      ) : (
-                        <Eye size={14} className="text-white/40 shrink-0" />
-                      )}
-                      <div className="text-left">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-white/60 font-bold">
-                          {hideImages ? 'Images Hidden' : 'Images Visible'}
-                        </p>
-                        <p className="text-[9px] text-white/25 mt-0.5">
-                          {hideImages ? 'Share page shows names only' : 'Bottle images shown on share page'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`w-10 h-5 rounded-full relative transition-colors duration-200 shrink-0 ${hideImages ? 'bg-scent-accent' : 'bg-white/10'}`}>
-                      <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${hideImages ? 'left-5' : 'left-0.5'}`} />
-                    </div>
-                  </button>
+            {/* Per-cologne controls */}
+            <div className="flex flex-col min-h-0 flex-1">
+              {/* Section header + search */}
+              <div className="px-6 pt-4 pb-3 shrink-0 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold">Cologne Visibility</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleShowAll}
+                      className="text-[8px] uppercase tracking-[0.3em] text-white/25 hover:text-white/60 transition-colors font-bold"
+                    >
+                      Show All
+                    </button>
+                    <span className="text-white/10">·</span>
+                    <button
+                      onClick={handleHideAll}
+                      className="text-[8px] uppercase tracking-[0.3em] text-white/25 hover:text-white/60 transition-colors font-bold"
+                    >
+                      Hide All
+                    </button>
+                  </div>
+                </div>
+
+                {items.length > 5 && (
+                  <div className="relative">
+                    <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
+                    <input
+                      ref={searchRef}
+                      type="text"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="Search fragrances..."
+                      className="w-full bg-white/[0.03] border border-white/10 pl-8 pr-4 py-2.5 text-[11px] text-white placeholder:text-white/15 focus:border-white/20 outline-none transition-all font-sans"
+                    />
+                  </div>
                 )}
               </div>
 
-              <p className="text-[9px] text-white/20 text-center leading-relaxed">
-                Anyone with this link can view your vault. They can click any fragrance to find it on Amazon.
-              </p>
+              {/* Scrollable cologne list */}
+              <div className="overflow-y-auto flex-1 px-6 pb-6 space-y-1.5 scrollbar-hide">
+                {filtered.length === 0 && (
+                  <p className="text-center text-white/20 font-serif italic text-sm py-8">No fragrances found</p>
+                )}
+                {filtered.map((item) => {
+                  const isHidden = !!item.shareHidden;
+                  const isPending = pendingIds.has(item.id);
+
+                  return (
+                    <motion.button
+                      key={item.id}
+                      layout
+                      onClick={() => !isPending && handleToggle(item)}
+                      disabled={isPending}
+                      className={`w-full flex items-center gap-3 px-4 py-3 border transition-all duration-200 text-left group ${
+                        isHidden
+                          ? 'bg-white/[0.01] border-white/5 opacity-50 hover:opacity-70'
+                          : 'bg-white/[0.04] border-white/10 hover:border-white/20'
+                      } ${isPending ? 'cursor-wait' : 'cursor-pointer'}`}
+                    >
+                      {/* Bottle thumbnail */}
+                      <div className="w-8 h-10 shrink-0 flex items-center justify-center overflow-hidden">
+                        {item.imageUrl && !isHidden ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full border border-white/10 flex items-center justify-center">
+                            <div className="w-1 h-4 bg-white/10 rounded-full" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Name */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold truncate">{item.brand}</p>
+                        <p className={`font-serif italic text-base leading-tight truncate transition-colors ${isHidden ? 'text-white/30' : 'text-white'}`}>
+                          {item.name}
+                        </p>
+                      </div>
+
+                      {/* Toggle */}
+                      <div className="shrink-0 ml-2">
+                        {isPending ? (
+                          <div className="w-4 h-4 border border-white/20 border-t-white/60 rounded-full animate-spin" />
+                        ) : isHidden ? (
+                          <EyeOff size={15} className="text-white/20 group-hover:text-white/50 transition-colors" />
+                        ) : (
+                          <Eye size={15} className="text-white/50 group-hover:text-white transition-colors" />
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
         </div>

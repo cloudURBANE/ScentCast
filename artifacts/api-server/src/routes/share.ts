@@ -54,14 +54,9 @@ router.get("/share/:userId", async (req, res) => {
     db.select().from(userFragrancesTable).where(eq(userFragrancesTable.userId, userId)),
   ]);
 
-  const fragrances = fragranceRows.map(r => {
-    const data = r.fragranceData as Record<string, any>;
-    if (settings.shareHideImages) {
-      const { imageUrl: _img, ...rest } = data;
-      return rest;
-    }
-    return data;
-  });
+  const fragrances = fragranceRows
+    .map(r => r.fragranceData as Record<string, any>)
+    .filter(data => !data.shareHidden);
 
   res.json({ fragrances, hideImages: settings.shareHideImages });
 });

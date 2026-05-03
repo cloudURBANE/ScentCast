@@ -95,6 +95,43 @@ router.post("/wardrobe", async (req, res) => {
   res.json({ ...hydrated, _dbId: row.id });
 });
 
+router.patch("/wardrobe/:fragranceId/visibility", async (req, res) => {
+  const token = getToken(req);
+  if (!token) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  const user = await getUserByToken(token);
+  if (!user) { res.status(401).json({ error: "Invalid token" }); return; }
+
+  const { fragranceId } = req.params;
+  const { shareHidden } = req.body as { shareHidden?: boolean };
+  if (typeof shareHidden !== "boolean") {
+    res.status(400).json({ error: "shareHidden (boolean) is required" });
+    return;
+  }
+
+  const rows = await db
+    .select()
+    .from(userFragrancesTable)
+    .where(eq(userFragrancesTable.userId, user.id));
+
+  const match = rows.find((r) => {
+    const data = r.fragranceData as any;
+    return data?.id === fragranceId || r.id === fragranceId;
+  });
+
+  if (!match) { res.status(404).json({ error: "Fragrance not found" }); return; }
+
+  const existing = match.fragranceData as Record<string, any>;
+  const updated = { ...existing, shareHidden };
+
+  await db
+    .update(userFragrancesTable)
+    .set({ fragranceData: updated as any })
+    .where(eq(userFragrancesTable.id, match.id));
+
+  res.json({ id: fragranceId, shareHidden });
+});
+
 router.post("/wardrobe/:fragranceId/synthesize", async (req, res) => {
   const token = getToken(req);
   if (!token) { res.status(401).json({ error: "Unauthorized" }); return; }

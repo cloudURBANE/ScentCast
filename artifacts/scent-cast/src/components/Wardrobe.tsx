@@ -30,6 +30,7 @@ export interface Fragrance {
   pyramid?: { top: string[]; heart: string[]; base: string[] };
   context?: { weather: string[]; time: string[]; occasion: string[] };
   synthesized?: boolean;
+  shareHidden?: boolean;
 }
 
 export const Wardrobe: React.FC<{

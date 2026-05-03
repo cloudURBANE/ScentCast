@@ -596,6 +596,10 @@ export default function App() {
         onClose={() => setIsShareModalOpen(false)}
         userId={userId}
         authToken={authToken}
+        items={items}
+        onToggleVisibility={(id, hidden) => {
+          setItems(prev => prev.map(item => item.id === id ? { ...item, shareHidden: hidden } : item));
+        }}
       />
 
       <AnimatePresence mode="wait">
