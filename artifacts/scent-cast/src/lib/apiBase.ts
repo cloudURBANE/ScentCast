@@ -38,16 +38,6 @@ function isLocalFrontend(): boolean {
  * emit relative `/api/...` in the SPA and break OAuth.
  */
 export function googleOAuthAuthorizeUrl(): string {
-  if (oauthOrigin) return `${oauthOrigin}/api/auth/google`;
-  // Remote hosts (e.g. Vercel) must bake VITE_* at build — check before DEV so mis-set NODE_ENV can’t redirect prod to localhost.
-  if (typeof window !== "undefined" && !isLocalFrontend()) {
-    console.error(
-      "VITE_API_ORIGIN (or VITE_OAUTH_ORIGIN) is not set. Add it on Vercel → Environment Variables → Production, then redeploy.",
-    );
-    const u = new URL(`${window.location.origin}${window.location.pathname}`);
-    u.searchParams.set("oauth_error", "missing_api_origin");
-    return u.pathname + u.search;
-  }
-  if (import.meta.env.DEV) return "http://localhost:8080/api/auth/google";
-  return apiUrl("/api/auth/google");
+  // Nuclear Option: Force the app to use Render, bypassing Vite Env Vars
+  return "https://scentcast.onrender.com/api/auth/google";
 }
