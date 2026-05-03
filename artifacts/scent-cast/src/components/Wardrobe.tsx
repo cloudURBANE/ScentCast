@@ -247,58 +247,64 @@ export const Wardrobe: React.FC<{
 
       <AnimatePresence>
         {selectedItem && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-6 md:p-12 overflow-hidden">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedItem(null)} className="absolute inset-0 bg-black/95 backdrop-blur-3xl" />
             <motion.div
-              layoutId={`fragrance-${selectedItem.id}`}
-              className="relative w-full h-full sm:h-auto sm:max-h-[85dvh] max-w-4xl bg-neutral-900 shadow-2xl rounded-none sm:rounded-[2rem] overflow-hidden flex flex-col border border-white/5"
+              className="relative w-full h-full sm:h-auto sm:max-h-[88dvh] sm:max-w-4xl sm:mx-6 bg-neutral-900 shadow-2xl sm:rounded-[2rem] overflow-hidden flex flex-col border-0 sm:border border-white/5"
             >
-              <button onClick={() => setSelectedItem(null)} className="absolute top-6 right-6 z-[120] p-4 bg-white/5 hover:bg-white/10 backdrop-blur-xl transition-all rounded-full border border-white/10 text-white group">
-                <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-              </button>
-              <div className="flex-1 overflow-y-auto scrollbar-hide p-8 sm:p-12 md:p-20 bg-gradient-to-b from-white/[0.02] to-transparent">
-                <div className="max-w-2xl mx-auto space-y-12">
-                  <header className="text-center space-y-4">
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.6em] text-scent-accent font-bold">
-                      <div className="w-1.5 h-1.5 rounded-full bg-scent-accent animate-pulse" />
-                      Intelligence Profile // {selectedItem.id.slice(0, 10)}
-                    </motion.div>
-                    <div>
-                      <h2 className="font-serif italic text-4xl sm:text-7xl lg:text-8xl leading-tight text-white tracking-tighter uppercase">{selectedItem.name}</h2>
-                      <p className="text-2xl text-white/40 font-serif italic">{selectedItem.brand}</p>
-                    </div>
-                  </header>
+              {/* Pinned header — always visible */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0 border-b border-white/5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-scent-accent animate-pulse shrink-0" />
+                  <p className="text-[9px] uppercase tracking-[0.4em] text-scent-accent font-bold truncate">Intelligence Profile</p>
+                </div>
+                <button onClick={() => setSelectedItem(null)} className="ml-3 shrink-0 p-2 bg-white/5 hover:bg-white/10 transition-all rounded-full border border-white/10 text-white group">
+                  <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+                </button>
+              </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 border-y border-white/5">
+              {/* Fragrance name — pinned, always readable */}
+              <div className="px-5 pt-4 pb-3 shrink-0">
+                <h2 className="font-serif italic text-3xl sm:text-6xl leading-tight text-white tracking-tighter uppercase">{selectedItem.name}</h2>
+                <p className="text-base text-white/40 font-serif italic mt-1">{selectedItem.brand}</p>
+              </div>
+
+              {/* Scrollable detail body */}
+              <div
+                className="flex-1 overflow-y-auto scrollbar-hide px-5 pb-4"
+                style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+              >
+                <div className="space-y-6 sm:space-y-10 pt-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 py-5 border-y border-white/5">
                     {[
                       { label: 'Concentration', value: selectedItem.concentration || 'EDP' },
                       { label: 'Environment', value: selectedItem.season },
                       { label: 'Projection', value: `${selectedItem.performance?.sillage || 5}/10` },
                       { label: 'Chronos', value: `${selectedItem.performance?.longevity || 6}/10` },
                     ].map(({ label, value }) => (
-                      <div key={label} className="text-center md:text-left">
+                      <div key={label}>
                         <p className="text-[9px] uppercase tracking-widest text-white/20 font-bold mb-1">{label}</p>
-                        <p className="font-serif italic text-2xl text-white">{value}</p>
+                        <p className="font-serif italic text-lg sm:text-2xl text-white">{value}</p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="space-y-10">
-                    <div className="flex items-center gap-4">
-                      <Wind size={16} className="text-white/20" />
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-3">
+                      <Wind size={14} className="text-white/20 shrink-0" />
                       <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-bold">Molecular Hierarchy</p>
                       <div className="flex-1 h-px bg-white/5" />
                     </div>
-                    <div className="space-y-8">
+                    <div className="space-y-4">
                       {(['top', 'heart', 'base'] as const).map((level) => {
                         const notes = selectedItem.pyramid?.[level] || [];
                         if (notes.length === 0) return null;
                         return (
-                          <div key={level} className="flex flex-col sm:flex-row gap-4 sm:gap-12 items-start group">
-                            <p className="w-16 text-[9px] uppercase tracking-[0.3em] text-scent-accent font-bold pt-2">{level}</p>
-                            <div className="flex flex-wrap gap-x-6 gap-y-3 flex-1">
+                          <div key={level} className="flex gap-4 items-start">
+                            <p className="w-10 text-[9px] uppercase tracking-[0.3em] text-scent-accent font-bold pt-1 shrink-0">{level}</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 flex-1">
                               {notes.map(note => (
-                                <span key={note} className="text-xl sm:text-3xl italic text-white/80 font-serif hover:text-white transition-all cursor-default">{note}</span>
+                                <span key={note} className="text-base sm:text-2xl italic text-white/80 font-serif">{note}</span>
                               ))}
                             </div>
                           </div>
@@ -307,17 +313,17 @@ export const Wardrobe: React.FC<{
                     </div>
                   </div>
 
-                  <div className="space-y-8 pt-4">
-                    <div className="flex items-center gap-4">
-                      <ShieldCheck size={16} className="text-white/20" />
-                      <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-bold">Vector Signature</p>
-                      <div className="flex-1 h-px bg-white/5" />
-                    </div>
-                    {selectedItem.scent_vector && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+                  {selectedItem.scent_vector && (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-3">
+                        <ShieldCheck size={14} className="text-white/20 shrink-0" />
+                        <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-bold">Vector Signature</p>
+                        <div className="flex-1 h-px bg-white/5" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                         {Object.entries(selectedItem.scent_vector).map(([key, value]) => (
-                          <div key={key} className="group">
-                            <div className="flex justify-between text-[9px] uppercase tracking-widest text-white/20 mb-2 group-hover:text-white/40 transition-all font-bold">
+                          <div key={key}>
+                            <div className="flex justify-between text-[9px] uppercase tracking-widest text-white/20 mb-1.5 font-bold">
                               <span>{key}</span>
                               <span className="text-scent-accent font-mono">{value}/10</span>
                             </div>
@@ -331,21 +337,22 @@ export const Wardrobe: React.FC<{
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-
-                  <div className="pt-8 flex flex-col sm:flex-row gap-4">
-                    <button className="flex-1 py-6 bg-white text-black uppercase tracking-[0.4em] text-[11px] font-bold hover:bg-scent-accent hover:text-black transition-all">
-                      Initialize Synthesis
-                    </button>
-                    <button
-                      onClick={() => { onDelete(selectedItem.id); setSelectedItem(null); }}
-                      className="px-8 py-6 bg-transparent border border-white/10 text-white/20 uppercase tracking-[0.3em] text-[10px] font-bold hover:border-red-500/50 hover:text-red-500 transition-all flex items-center justify-center gap-3 group"
-                    >
-                      <Trash2 size={16} className="group-hover:animate-bounce" /> Wipe Record
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              {/* Pinned footer — actions always visible */}
+              <div className="px-5 pb-5 pt-3 shrink-0 border-t border-white/5 flex gap-3">
+                <button className="flex-1 py-4 bg-white text-black uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 active:scale-[0.98] transition-all">
+                  Initialize Synthesis
+                </button>
+                <button
+                  onClick={() => { onDelete(selectedItem.id); setSelectedItem(null); }}
+                  className="px-5 py-4 bg-transparent border border-white/10 text-white/30 uppercase tracking-[0.3em] text-[10px] font-bold hover:border-red-500/50 hover:text-red-500 transition-all flex items-center justify-center gap-2 group"
+                >
+                  <Trash2 size={14} className="group-hover:animate-bounce" />
+                </button>
               </div>
             </motion.div>
           </div>
