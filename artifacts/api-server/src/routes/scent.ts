@@ -13,14 +13,15 @@ router.get("/weather", async (req, res) => {
 });
 
 router.post("/scent-profile", async (req, res) => {
-  const { name, brand, imageUrl, notes, family, description, pyramid } = req.body as {
+  const { name, brand, imageUrl, notes, family, description, pyramid, perfumer } = req.body as {
     name?: string;
     brand?: string;
     imageUrl?: string;
     notes?: string[];
     family?: string;
     description?: string;
-    pyramid?: any;
+    pyramid?: { top: string[]; heart: string[]; base: string[] };
+    perfumer?: string;
   };
 
   if (!name) {
@@ -28,11 +29,14 @@ router.post("/scent-profile", async (req, res) => {
     return;
   }
 
-  const result = await buildProfile(
-    name,
-    brand || "",
-    { notes, family, description, imageUrl, pyramid }
-  );
+  const result = await buildProfile(name, brand || "", {
+    notes,
+    family,
+    description,
+    imageUrl,
+    pyramid,
+    perfumer,
+  });
   res.json(result);
 });
 
@@ -49,7 +53,9 @@ router.post("/search-scent", async (req, res) => {
     const profile = await buildProfile(first.name, first.brand, {
       notes: first.notes,
       family: first.family,
-      description: first.description
+      description: first.description,
+      pyramid: first.pyramid,
+      perfumer: first.perfumer,
     });
     res.json(profile);
     return;
@@ -59,7 +65,9 @@ router.post("/search-scent", async (req, res) => {
   const profile = await buildProfile(scraped.name, scraped.brand, {
     notes: scraped.notes,
     family: scraped.family,
-    description: scraped.description
+    description: scraped.description,
+    pyramid: scraped.pyramid,
+    perfumer: scraped.perfumer,
   });
   res.json(profile);
 });
@@ -81,18 +89,20 @@ router.post("/gemini/search", async (req, res) => {
             text: `Identify and provide detailed information about the fragrance: "${query}".
 Return a JSON object with these exact fields:
 {
-  "name": "product name",
-  "brand": "brand/house name",
-  "family": "fragrance family (e.g. Woody, Floral, Oriental, Fresh, Citrus, Fougere, Chypre, Gourmand)",
-  "notes": ["array", "of", "key", "notes"],
-  "description": "two sentence evocative description of the scent character",
+  "name": "exact product name",
+  "brand": "brand or perfume house name",
+  "perfumer": "name of the nose / perfumer who created it, or empty string if unknown",
+  "family": "primary fragrance family (e.g. Woody, Floral, Oriental, Fresh, Citrus, Fougere, Chypre, Gourmand, Amber, Aquatic)",
+  "notes": ["complete", "flat", "list", "of", "all", "notes"],
+  "description": "two to three sentence evocative description of the scent character and personality",
   "pyramid": {
     "top": ["top note 1", "top note 2"],
     "heart": ["heart note 1", "heart note 2"],
     "base": ["base note 1", "base note 2", "base note 3"]
-  }
+  },
+  "accords": ["dominant accord 1", "dominant accord 2", "dominant accord 3"]
 }
-Only return valid JSON, no markdown or extra text.`
+Be as accurate and complete as possible with notes and pyramid. Only return valid JSON, no markdown or extra text.`
           }
         ]
       }
@@ -109,7 +119,12 @@ Only return valid JSON, no markdown or extra text.`
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) {
-      parsed = JSON.parse(match[0]);
+      try {
+        parsed = JSON.parse(match[0]);
+      } catch {
+        res.status(500).json({ error: "Failed to parse AI response" });
+        return;
+      }
     } else {
       res.status(500).json({ error: "Failed to parse AI response" });
       return;
@@ -142,11 +157,17 @@ router.post("/gemini/vision", async (req, res) => {
             text: `This is an image of a perfume or fragrance bottle. Identify all visible fragrances and return a JSON array.
 Each object in the array should have:
 {
-  "name": "product name",
-  "brand": "brand/house name",
-  "family": "fragrance family",
-  "notes": ["array", "of", "key", "notes"],
-  "description": "brief evocative description"
+  "name": "exact product name",
+  "brand": "brand or perfume house name",
+  "perfumer": "name of the nose / perfumer who created it, or empty string if unknown",
+  "family": "primary fragrance family",
+  "notes": ["complete", "flat", "list", "of", "all", "notes"],
+  "description": "brief evocative description of the scent",
+  "pyramid": {
+    "top": ["top note 1"],
+    "heart": ["heart note 1"],
+    "base": ["base note 1"]
+  }
 }
 If you cannot identify the fragrance, return an empty array [].
 Only return valid JSON, no markdown or extra text.`
@@ -166,8 +187,12 @@ Only return valid JSON, no markdown or extra text.`
   } catch {
     const match = text.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
     if (match) {
-      parsed = JSON.parse(match[0]);
-      if (!Array.isArray(parsed)) parsed = [parsed];
+      try {
+        parsed = JSON.parse(match[0]);
+        if (!Array.isArray(parsed)) parsed = [parsed];
+      } catch {
+        parsed = [];
+      }
     } else {
       parsed = [];
     }

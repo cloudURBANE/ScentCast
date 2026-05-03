@@ -12,6 +12,7 @@ export interface FragranceData {
   };
   description: string;
   imageUrl?: string;
+  perfumer?: string;
 }
 
 const dataset: FragranceData[] = fragrancesRaw as FragranceData[];

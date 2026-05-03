@@ -1,38 +1,139 @@
-import axios from 'axios';
+import axios from "axios";
 
-export async function deepScrapeFragrance(query: string) {
+interface ScrapedFragrance {
+  name: string;
+  brand: string;
+  perfumer: string;
+  notes: string[];
+  pyramid: { top: string[]; heart: string[]; base: string[] };
+  family: string;
+  description: string;
+}
+
+const ALL_NOTE_KEYWORDS = [
+  "vanilla", "rose", "sandalwood", "bergamot", "lemon", "patchouli", "musk", "jasmine",
+  "oud", "amber", "cedar", "vetiver", "leather", "tonka", "lavender", "iris", "pear",
+  "apple", "pepper", "neroli", "tuberose", "ylang", "cardamom", "citrus", "wood",
+  "grapefruit", "orange", "lime", "peach", "plum", "cherry", "raspberry", "violet",
+  "geranium", "oakmoss", "treemoss", "benzoin", "labdanum", "frankincense", "myrrh",
+  "incense", "saffron", "ginger", "cinnamon", "tobacco", "smoke", "honey", "caramel",
+  "praline", "coconut", "mint", "eucalyptus", "pine", "fir", "birch", "guaiac",
+  "ambergris", "ambroxan", "heliotrope", "orris", "elemi", "styrax", "beeswax",
+  "aldehyde", "mastic", "cistus", "marine", "sea", "salt", "aquatic",
+];
+
+const FAMILY_MAP: Array<{ keywords: string[]; family: string }> = [
+  { keywords: ["oud", "amber", "resin", "balsam", "labdanum", "frankincense", "myrrh", "incense"], family: "Oriental" },
+  { keywords: ["rose", "jasmine", "tuberose", "ylang", "violet", "iris", "peony", "magnolia"], family: "Floral" },
+  { keywords: ["sandalwood", "cedar", "vetiver", "patchouli", "wood", "guaiac", "birch"], family: "Woody" },
+  { keywords: ["bergamot", "lemon", "grapefruit", "lime", "orange", "citrus", "neroli"], family: "Citrus" },
+  { keywords: ["marine", "sea", "salt", "aquatic", "ozone", "ocean"], family: "Aquatic" },
+  { keywords: ["vanilla", "tonka", "caramel", "praline", "chocolate", "honey", "sugar"], family: "Gourmand" },
+  { keywords: ["lavender", "fougere", "coumarin", "oakmoss", "geranium"], family: "Fougere" },
+  { keywords: ["moss", "chypre", "oakmoss", "cistus", "labdanum"], family: "Chypre" },
+  { keywords: ["fresh", "mint", "eucalyptus", "green", "grass"], family: "Fresh" },
+];
+
+const PERFUMER_PATTERNS = [
+  /(?:perfumer|nose|created\s+by|composed\s+by|signed\s+by)[:\s]+([A-Z][a-z]+(?: [A-Z][a-z]+)+)/i,
+  /([A-Z][a-z]+(?: [A-Z][a-z]+)+)(?:\s+is\s+the\s+(?:nose|perfumer))/i,
+];
+
+function detectFamily(notes: string[], snippet: string): string {
+  const text = `${notes.join(" ")} ${snippet}`.toLowerCase();
+  for (const { keywords, family } of FAMILY_MAP) {
+    if (keywords.some(k => text.includes(k))) return family;
+  }
+  return "Fresh";
+}
+
+function classifyNotesByPosition(notes: string[]): { top: string[]; heart: string[]; base: string[] } {
+  const top: string[] = [];
+  const heart: string[] = [];
+  const base: string[] = [];
+
+  const topIndicators = ["bergamot", "lemon", "grapefruit", "lime", "orange", "mandarin", "mint", "aldehy", "pineapple", "neroli", "petitgrain"];
+  const baseIndicators = ["sandalwood", "cedar", "vetiver", "patchouli", "oud", "amber", "musk", "vanilla", "tonka", "benzoin", "labdanum", "leather", "moss"];
+
+  for (const note of notes) {
+    const n = note.toLowerCase();
+    if (topIndicators.some(t => n.includes(t))) {
+      top.push(note);
+    } else if (baseIndicators.some(b => n.includes(b))) {
+      base.push(note);
+    } else {
+      heart.push(note);
+    }
+  }
+
+  if (top.length === 0 && heart.length > 1) {
+    top.push(...heart.splice(0, 1));
+  }
+
+  return { top, heart, base };
+}
+
+function extractPerfumer(snippet: string): string {
+  for (const pattern of PERFUMER_PATTERNS) {
+    const match = snippet.match(pattern);
+    if (match?.[1]) return match[1].trim();
+  }
+  return "";
+}
+
+export async function deepScrapeFragrance(query: string): Promise<ScrapedFragrance> {
+  const defaultResult = (): ScrapedFragrance => {
+    const parts = query.split(" ");
+    const brand = parts[0] || "Unknown";
+    const name = parts.slice(1).join(" ") || parts[0];
+    const notes = ["Citrus", "Musk", "Wood"];
+    return {
+      name,
+      brand,
+      perfumer: "",
+      notes,
+      pyramid: classifyNotesByPosition(notes),
+      family: "Fresh",
+      description: `Basic profile for ${query}.`,
+    };
+  };
+
   try {
-    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " perfume or fragrance")}&utf8=&format=json`;
-    const res = await axios.get(searchUrl, { headers: { 'User-Agent': 'OlfactoryApp/1.0' } });
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " perfume fragrance")}&utf8=&format=json`;
+    const res = await axios.get(searchUrl, { headers: { "User-Agent": "OlfactoryApp/1.0" } });
 
-    let snippet = '';
+    let snippet = "";
     if (res.data?.query?.search?.length > 0) {
-      snippet = res.data.query.search.map((s: any) => s.snippet).join(' ').replace(/<[^>]+>/g, '');
+      snippet = res.data.query.search
+        .map((s: any) => s.snippet)
+        .join(" ")
+        .replace(/<[^>]+>/g, "");
     }
 
     const lowerSnippet = snippet.toLowerCase();
-    const possibleNotes = ['vanilla', 'rose', 'sandalwood', 'bergamot', 'lemon', 'patchouli', 'musk', 'jasmine', 'oud', 'amber', 'cedar', 'vetiver', 'leather', 'tonka', 'lavender', 'iris', 'pear', 'apple', 'pepper', 'neroli', 'tuberose', 'ylang', 'cardamom', 'citrus', 'wood'];
-    const foundNotes = possibleNotes.filter(n => lowerSnippet.includes(n));
+    const foundNotes = ALL_NOTE_KEYWORDS.filter(n => lowerSnippet.includes(n)).map(
+      n => n.charAt(0).toUpperCase() + n.slice(1)
+    );
 
-    const parts = query.split(' ');
+    const notes = foundNotes.length > 0 ? foundNotes : ["Citrus", "Musk", "Wood"];
+    const pyramid = classifyNotesByPosition(notes);
+    const family = detectFamily(notes, snippet);
+    const perfumer = extractPerfumer(snippet);
+
+    const parts = query.split(" ");
     const brand = parts[0] || "Unknown";
-    const name = parts.slice(1).join(' ') || parts[0];
+    const name = parts.slice(1).join(" ") || parts[0];
 
     return {
       name,
       brand,
-      notes: foundNotes.length > 0 ? foundNotes : ['Citrus', 'Wood', 'Musk'],
-      family: foundNotes.includes('wood') || foundNotes.includes('sandalwood') ? 'Woody' : (foundNotes.includes('rose') || foundNotes.includes('jasmine') ? 'Floral' : 'Fresh'),
-      description: snippet ? `${snippet.substring(0, 200)}...` : `Standard profile for ${query}.`
+      perfumer,
+      notes,
+      pyramid,
+      family,
+      description: snippet ? `${snippet.substring(0, 300)}...` : `Standard profile for ${query}.`,
     };
   } catch {
-    const parts = query.split(' ');
-    return {
-      name: parts.slice(1).join(' ') || parts[0],
-      brand: parts[0] || "Unknown",
-      notes: ['Citrus', 'Wood', 'Musk'],
-      family: 'Fresh',
-      description: `Basic heuristic profile for ${query}.`
-    };
+    return defaultResult();
   }
 }
