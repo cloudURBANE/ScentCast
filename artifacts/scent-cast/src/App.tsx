@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { FragranceCapture } from './components/FragranceCapture';
 import { Wardrobe, Fragrance, DestinationType, EnergyState } from './components/Wardrobe';
-import { Wind, Play, X, LogOut } from 'lucide-react';
+import { Wind, Play, X, LogOut, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScentIntentModal } from './components/ScentIntentModal';
 import { LavaBackground } from './components/LavaBackground';
 import { AuthModal } from './components/AuthModal';
+import { SharePage } from './components/SharePage';
+import { ShareModal } from './components/ShareModal';
 
 interface WeatherData {
   temp: number;
@@ -115,11 +117,13 @@ export default function App() {
   const [items, setItems] = useState<Fragrance[]>([]);
   const [wardrobeLoaded, setWardrobeLoaded] = useState(false);
   const [isIntentModalOpen, setIsIntentModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [activeRecommendation, setActiveRecommendation] = useState<Fragrance | null>(null);
   const [recommendationReason, setRecommendationReason] = useState<string>('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const fetchWeather = useCallback(async (lat?: number, lon?: number) => {
     try {
@@ -171,6 +175,10 @@ export default function App() {
   useEffect(() => {
     if (authToken) {
       loadWardrobe(authToken);
+      fetch('/api/share-settings', { headers: { Authorization: `Bearer ${authToken}` } })
+        .then(r => r.json())
+        .then(d => { if (d.userId) setUserId(d.userId); })
+        .catch(() => {});
     } else {
       setWardrobeLoaded(true);
     }
@@ -470,6 +478,11 @@ export default function App() {
     return phrases;
   }, [items, wardrobeLoaded]);
 
+  const sharePathMatch = window.location.pathname.match(/^\/share\/([a-f0-9-]{36})$/);
+  if (sharePathMatch) {
+    return <SharePage userId={sharePathMatch[1]} />;
+  }
+
   if (!authToken) {
     return <AuthModal onAuth={handleAuth} />;
   }
@@ -496,6 +509,13 @@ export default function App() {
               className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/30 transition-all disabled:cursor-default"
             >
               <span className={`w-2 h-2 rounded-full ${locationStatus === 'granted' ? 'bg-green-400' : locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/20'}`} />
+            </button>
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              title="Share Vault"
+              className="flex items-center justify-center w-8 h-8 rounded-full border border-white/10 hover:border-white/30 transition-all text-white/30 hover:text-white"
+            >
+              <Share2 size={14} />
             </button>
             <button
               onClick={handleSignOut}
@@ -570,6 +590,13 @@ export default function App() {
       </main>
 
       <ScentIntentModal isOpen={isIntentModalOpen} onClose={() => setIsIntentModalOpen(false)} onComplete={handleIntentComplete} />
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        userId={userId}
+        authToken={authToken}
+      />
 
       <AnimatePresence mode="wait">
         {activeRecommendation && (

@@ -4,6 +4,7 @@ import scentRouter from "./scent";
 import authRouter from "./auth";
 import oauthRouter from "./oauth";
 import wardrobeRouter from "./wardrobe";
+import shareRouter from "./share";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(scentRouter);
 router.use(authRouter);
 router.use(oauthRouter);
 router.use(wardrobeRouter);
+router.use(shareRouter);
 
 export default router;
