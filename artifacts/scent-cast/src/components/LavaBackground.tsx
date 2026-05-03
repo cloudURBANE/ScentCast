@@ -55,7 +55,7 @@ export const LavaBackground: React.FC = () => {
       void main() {
         vec2 uv = gl_FragCoord.xy / u_resolution.xy;
         uv.x *= u_resolution.x / u_resolution.y;
-        float t = u_time * 0.15;
+        float t = u_time * 0.12;
         vec2 q = vec2(0.0);
         q.x = fbm(uv + 0.1 * t);
         q.y = fbm(uv + vec2(1.0));
@@ -63,14 +63,23 @@ export const LavaBackground: React.FC = () => {
         r.x = fbm(uv + 1.0 * q + vec2(1.7, 9.2) + 0.15 * t);
         r.y = fbm(uv + 1.0 * q + vec2(8.3, 2.8) + 0.126 * t);
         float f = fbm(uv + r);
+
         float cracks = 1.0 - abs(f - 0.5) * 2.0;
-        cracks = pow(cracks, 20.0);
-        float intensity = 0.5 + 0.5 * noise(uv * 4.0 + t);
-        vec3 color = vec3(0.0);
-        vec3 crackColor = vec3(1.0);
-        color = mix(color, crackColor * intensity, cracks);
-        float glow = pow(cracks, 2.0) * 0.25;
-        color += crackColor * glow;
+        cracks = pow(cracks, 5.0);
+
+        float intensity = 0.6 + 0.4 * noise(uv * 3.0 + t);
+
+        vec3 darkBase = vec3(0.04, 0.02, 0.01);
+        vec3 crackCore = vec3(1.0, 0.75, 0.3);
+        vec3 crackGlow = vec3(0.8, 0.35, 0.05);
+
+        vec3 color = darkBase;
+        color = mix(color, crackGlow, cracks * 0.6);
+        color = mix(color, crackCore * intensity, pow(cracks, 2.5));
+
+        float halo = pow(cracks, 1.8) * 0.55;
+        color += crackGlow * halo;
+
         gl_FragColor = vec4(color, 1.0);
       }
     `;
@@ -131,7 +140,7 @@ export const LavaBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 w-full h-full pointer-events-none opacity-30"
+      className="fixed inset-0 -z-10 w-full h-full pointer-events-none opacity-70"
       style={{ background: '#000' }}
     />
   );

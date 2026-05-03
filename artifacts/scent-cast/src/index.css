@@ -17,12 +17,16 @@
 }
 
 :root {
-  background-color: var(--color-scent-bg);
+  background-color: transparent;
   color: var(--color-scent-accent);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  background-color: transparent;
 }
 
 body {
