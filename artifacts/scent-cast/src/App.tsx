@@ -66,17 +66,13 @@ const AtmosphereBar: React.FC<AtmosphereBarProps> = React.memo(({ weather, weath
               </div>
             </div>
             <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-            {location != null && (
-              <>
-                <div className="flex items-center gap-8">
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Coordinate:</span>
-                    <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{location}</span>
-                  </div>
-                </div>
-                <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-              </>
-            )}
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Coordinate:</span>
+                <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{location ?? '—'}</span>
+              </div>
+            </div>
+            <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
             <div className="flex items-center gap-8">
               <div className="flex flex-col items-start gap-1">
                 <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Matrix:</span>
@@ -506,9 +502,12 @@ export default function App() {
             key="recommendation-overlay"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[110] overflow-y-auto bg-black/95 backdrop-blur-3xl"
-            style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+            className="fixed inset-0 z-[110] overflow-hidden bg-black/95 backdrop-blur-3xl"
           >
+            <div
+              className="absolute inset-0 overflow-y-scroll"
+              style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+            >
             <div className="min-h-full flex items-start sm:items-center justify-center p-4 py-6 sm:p-8">
               <div className="max-w-2xl w-full text-center space-y-6 sm:space-y-12 p-5 sm:p-16 relative bg-black border border-white/10 shadow-2xl">
                 <button onClick={() => setActiveRecommendation(null)} className="absolute top-4 right-4 sm:top-8 sm:right-8 p-2 text-white/40 hover:text-white hover:bg-white/10 transition-all z-10">
@@ -537,6 +536,7 @@ export default function App() {
                   Confirm Alignment
                 </button>
               </div>
+            </div>
             </div>
           </motion.div>
         )}

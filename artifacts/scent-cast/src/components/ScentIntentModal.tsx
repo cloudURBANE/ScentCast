@@ -51,16 +51,21 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+      <div className="fixed inset-0 z-[200] overflow-hidden">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={handleClose}
-          className="fixed inset-0 bg-black/95 backdrop-blur-3xl"
+          className="absolute inset-0 bg-black/95 backdrop-blur-3xl"
         />
 
+        {/* iOS-safe scroll container: absolute+inset inside fixed+overflow-hidden */}
+        <div
+          className="absolute inset-0 overflow-y-scroll"
+          style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        >
         <div className="relative min-h-full flex items-start sm:items-center justify-center p-4 py-6 sm:p-8">
         {/* Modal card */}
         <motion.div
@@ -230,6 +235,7 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
             </div>
           </div>
         </motion.div>
+        </div>
         </div>
       </div>
     </AnimatePresence>
