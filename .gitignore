@@ -18,6 +18,9 @@ artifacts/scent-cast/.env.*
 # dependencies
 node_modules
 
+# Chat/agent paste dumps (often contain pasted credentials)
+attached_assets/Pasted*.txt
+
 # Firebase service account (never commit)
 *-firebase-adminsdk-*.json
 **/serviceAccount*.json
