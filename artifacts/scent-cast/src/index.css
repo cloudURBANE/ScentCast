@@ -17,7 +17,7 @@
 }
 
 :root {
-  background-color: transparent;
+  background-color: #000000;
   color: var(--color-scent-accent);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,7 +26,7 @@
 }
 
 html, body {
-  background-color: transparent;
+  background-color: #000000;
 }
 
 body {
@@ -103,19 +103,21 @@ body {
 }
 
 @keyframes infinite-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
 
 .animate-infinite-scroll {
   display: flex;
   width: max-content;
+  will-change: transform;
   animation: infinite-scroll 35s linear infinite;
 }
 
 .animate-infinite-scroll-slow {
   display: flex;
   width: max-content;
+  will-change: transform;
   animation: infinite-scroll 60s linear infinite;
 }
 

@@ -140,8 +140,8 @@ export const LavaBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 w-full h-full pointer-events-none opacity-70"
-      style={{ background: '#000' }}
+      className="fixed inset-0 w-full h-full pointer-events-none opacity-60"
+      style={{ zIndex: 9999, mixBlendMode: 'screen' }}
     />
   );
 };

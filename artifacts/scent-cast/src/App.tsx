@@ -39,7 +39,7 @@ const LiveClock: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
   return (
-    <span className="font-mono tracking-widest text-2xl sm:text-4xl text-white">
+    <span className="font-mono tracking-widest text-2xl sm:text-4xl text-white tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
       {time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
     </span>
   );
@@ -126,7 +126,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-black/15 selection:bg-scent-accent selection:text-black text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-black selection:bg-scent-accent selection:text-black text-white relative overflow-x-hidden">
       <LavaBackground />
       <nav className="fixed top-0 left-0 right-0 h-24 border-b border-white/5 bg-black/40 backdrop-blur-2xl z-50 px-8">
         <div className="max-w-[1400px] mx-auto h-full flex items-center relative">
