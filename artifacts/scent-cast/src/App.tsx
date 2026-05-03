@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { FragranceCapture } from './components/FragranceCapture';
 import { Wardrobe, Fragrance, DestinationType, EnergyState } from './components/Wardrobe';
@@ -404,6 +404,72 @@ export default function App() {
     setTimeout(() => setActiveRecommendation(winner.item), 800);
   };
 
+  const tickerPhrases = useMemo(() => {
+    if (!wardrobeLoaded || items.length === 0) {
+      return [
+        'Add scents to your vault to unlock discovery',
+        'Analyze atmospheric nuance for the perfect wear',
+        'Your signature scent is currently syncing with the environment',
+      ];
+    }
+
+    const phrases: string[] = [];
+
+    // Vault size
+    phrases.push(`${items.length} scent${items.length === 1 ? '' : 's'} archived in your vault`);
+
+    // Dominant scent family
+    const families = items.map(i => i.family).filter(Boolean) as string[];
+    if (families.length > 0) {
+      const fc: Record<string, number> = {};
+      families.forEach(f => { fc[f] = (fc[f] || 0) + 1; });
+      const topFamily = Object.entries(fc).sort((a, b) => b[1] - a[1])[0][0];
+      phrases.push(`Predominantly ${topFamily.toLowerCase()} olfactory signature`);
+    }
+
+    // Most recurring note
+    const allNotes = items.flatMap(i => i.notes || []);
+    if (allNotes.length > 0) {
+      const nc: Record<string, number> = {};
+      allNotes.forEach(n => { const k = n.toLowerCase(); nc[k] = (nc[k] || 0) + 1; });
+      const [topNote, topCount] = Object.entries(nc).sort((a, b) => b[1] - a[1])[0];
+      if (topCount > 1) phrases.push(`Recurring molecule detected: ${topNote}`);
+    }
+
+    // Scent vector lean
+    const vectors = items.map(i => i.scent_vector).filter(Boolean) as NonNullable<Fragrance['scent_vector']>[];
+    if (vectors.length > 0) {
+      const dims = ['freshness', 'sweetness', 'woodiness', 'spice', 'warmth', 'musk'] as const;
+      const labels: Record<string, string> = {
+        freshness: 'fresh and airy', sweetness: 'sweet and gourmand',
+        woodiness: 'woody and grounded', spice: 'spiced and bold',
+        warmth: 'warm and enveloping', musk: 'musky and skin-close',
+      };
+      const top = dims
+        .map(d => ({ d, avg: vectors.reduce((s, v) => s + v[d], 0) / vectors.length }))
+        .sort((a, b) => b.avg - a.avg)[0];
+      if (top.avg >= 4.5) phrases.push(`Your vault reads ${labels[top.d]}`);
+    }
+
+    // Season lean
+    const seasons = items.map(i => i.season).filter(Boolean) as string[];
+    if (seasons.length > 0) {
+      const sc: Record<string, number> = {};
+      seasons.forEach(s => { sc[s] = (sc[s] || 0) + 1; });
+      const [topSeason, topSeasonCount] = Object.entries(sc).sort((a, b) => b[1] - a[1])[0];
+      if (topSeasonCount > 1) phrases.push(`Calibrated for ${topSeason.toLowerCase()} conditions`);
+    }
+
+    // Brand spread
+    const brands = new Set(items.map(i => i.brand).filter(Boolean));
+    if (brands.size > 1) phrases.push(`${brands.size} houses represented in your collection`);
+
+    // Pad if short
+    if (phrases.length < 3) phrases.push('Olfactory intelligence active', 'Atmospheric pairing in progress');
+
+    return phrases;
+  }, [items, wardrobeLoaded]);
+
   if (!authToken) {
     return <AuthModal onAuth={handleAuth} />;
   }
@@ -453,12 +519,12 @@ export default function App() {
                   <div className="flex animate-infinite-scroll gap-20 text-[11px] uppercase font-bold tracking-[0.5em] text-scent-muted font-sans whitespace-nowrap">
                     {[...Array(4)].map((_, i) => (
                       <span key={i} className="flex items-center gap-20">
-                        <span>Add scents to your vault to unlock discovery</span>
-                        <span className="text-white/10">•</span>
-                        <span>Analyze atmospheric nuance for the perfect wear</span>
-                        <span className="text-white/10">•</span>
-                        <span>Your signature scent is currently syncing with the environment</span>
-                        <span className="text-white/10">•</span>
+                        {tickerPhrases.map((phrase, j) => (
+                          <React.Fragment key={j}>
+                            <span>{phrase}</span>
+                            <span className="text-white/10">•</span>
+                          </React.Fragment>
+                        ))}
                       </span>
                     ))}
                   </div>
