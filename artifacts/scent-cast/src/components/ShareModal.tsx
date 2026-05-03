@@ -44,6 +44,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   }, [isOpen]);
 
   const filtered = items.filter(item => {
+    if (!item?.name || !item?.brand) return false;
     const q = search.toLowerCase();
     return (
       item.name.toLowerCase().includes(q) ||
