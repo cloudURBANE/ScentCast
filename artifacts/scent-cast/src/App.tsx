@@ -33,7 +33,7 @@ const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text, speed = 
   return <span>{displayedText}</span>;
 };
 
-const LiveClock: React.FC = () => {
+const LiveClock: React.FC = React.memo(() => {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -44,7 +44,73 @@ const LiveClock: React.FC = () => {
       {time.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
     </span>
   );
-};
+});
+
+interface AtmosphereBarProps {
+  weather: WeatherData | null;
+  weatherLoading: boolean;
+}
+
+const ATMOSPHERE_COPIES = 6;
+
+const AtmosphereBar: React.FC<AtmosphereBarProps> = React.memo(({ weather, weatherLoading }) => {
+  const temp = weatherLoading ? '—' : weather?.temp != null ? `${Math.round(weather.temp)}°F` : '—';
+  const condition = weatherLoading ? '—' : weather?.condition ?? '—';
+  const humidity = weatherLoading ? '—' : weather?.humidity != null ? `${weather.humidity}%` : '—';
+  const location = weather?.location ?? null;
+
+  return (
+    <div className="py-20 border-y border-white/5 bg-transparent overflow-hidden flex select-none relative">
+      <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-black via-black/40 to-transparent z-20 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-black via-black/40 to-transparent z-20 pointer-events-none" />
+      <div className="flex animate-infinite-scroll-slow gap-40 text-[18px] uppercase tracking-tighter text-white/40 font-serif italic whitespace-nowrap items-center">
+        {[...Array(ATMOSPHERE_COPIES)].map((_, i) => (
+          <React.Fragment key={i}>
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Chronos:</span>
+                <LiveClock />
+              </div>
+            </div>
+            <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Atmosphere:</span>
+                <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{temp}</span>
+              </div>
+            </div>
+            <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
+            {location != null && (
+              <>
+                <div className="flex items-center gap-8">
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Coordinate:</span>
+                    <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{location}</span>
+                  </div>
+                </div>
+                <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
+              </>
+            )}
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Matrix:</span>
+                <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{condition}</span>
+              </div>
+            </div>
+            <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
+            <div className="flex items-center gap-8">
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Saturation:</span>
+                <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{humidity}</span>
+              </div>
+            </div>
+            <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+});
 
 export default function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => {
@@ -438,55 +504,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="py-20 border-y border-white/5 bg-transparent overflow-hidden flex select-none relative">
-            <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-black via-black/40 to-transparent z-20 pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-black via-black/40 to-transparent z-20 pointer-events-none" />
-            <div className="flex animate-infinite-scroll-slow gap-40 text-[18px] uppercase tracking-tighter text-white/40 font-serif italic whitespace-nowrap items-center">
-              {[...Array(6)].map((_, i) => (
-                <React.Fragment key={i}>
-                  <div className="flex items-center gap-8">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Chronos:</span>
-                      <LiveClock />
-                    </div>
-                  </div>
-                  <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-                  <div className="flex items-center gap-8">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Atmosphere:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Syncing..." speed={30} /> : weather?.temp != null ? `${Math.round(weather.temp)}°F` : '—'}</span>
-                    </div>
-                  </div>
-                  <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-                  {weather?.location && (
-                    <>
-                      <div className="flex items-center gap-8">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Coordinate:</span>
-                          <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weather.location}</span>
-                        </div>
-                      </div>
-                      <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-                    </>
-                  )}
-                  <div className="flex items-center gap-8">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Matrix:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Detecting..." speed={30} /> : weather?.condition ?? '—'}</span>
-                    </div>
-                  </div>
-                  <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-                  <div className="flex items-center gap-8">
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Saturation:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Measuring..." speed={30} /> : weather?.humidity != null ? `${weather.humidity}%` : '—'}</span>
-                    </div>
-                  </div>
-                  <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
+          <AtmosphereBar weather={weather} weatherLoading={weatherLoading} />
 
           <div className="pt-32 border-t border-white/5">
             <Wardrobe items={items} onDelete={handleDeleteItem} onUpdateImage={handleUpdateImage} featuredItem={activeRecommendation} />
