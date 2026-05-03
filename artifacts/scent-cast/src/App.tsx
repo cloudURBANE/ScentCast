@@ -51,28 +51,40 @@ export default function App() {
   const [activeRecommendation, setActiveRecommendation] = React.useState<Fragrance | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
 
-  useEffect(() => {
-    async function fetchWeather(lat?: number, lon?: number) {
-      try {
-        const url = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
-        const response = await axios.get(url);
-        setWeather(response.data);
-      } catch (err) {
-        console.error("Failed to fetch weather", err);
-      } finally {
-        setWeatherLoading(false);
-      }
-    }
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-        () => fetchWeather()
-      );
-    } else {
-      fetchWeather();
+  const fetchWeather = React.useCallback(async (lat?: number, lon?: number) => {
+    try {
+      const url = lat && lon ? `/api/weather?lat=${lat}&lon=${lon}` : '/api/weather';
+      const response = await axios.get(url);
+      setWeather(response.data);
+    } catch (err) {
+      console.error("Failed to fetch weather", err);
+    } finally {
+      setWeatherLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchWeather();
+  }, [fetchWeather]);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) { return; }
+    setLocationStatus('requesting');
+    setWeatherLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocationStatus('granted');
+        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setLocationStatus('denied');
+        setWeatherLoading(false);
+      },
+      { timeout: 12000, enableHighAccuracy: false }
+    );
+  };
 
   const handleAddItem = (item: any) => {
     setItems((prev) => [{
@@ -117,11 +129,27 @@ export default function App() {
     <div className="min-h-screen bg-black selection:bg-scent-accent selection:text-black text-white relative overflow-x-hidden">
       <LavaBackground />
       <nav className="fixed top-0 left-0 right-0 h-24 border-b border-white/5 bg-black/40 backdrop-blur-2xl z-50 px-8">
-        <div className="max-w-[1400px] mx-auto h-full flex items-center justify-center">
+        <div className="max-w-[1400px] mx-auto h-full flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wind size={24} strokeWidth={1} className="text-white" />
             <h1 className="font-serif text-2xl italic tracking-tighter uppercase">Scent Cast</h1>
           </div>
+          {locationStatus !== 'granted' && (
+            <button
+              onClick={requestLocation}
+              disabled={locationStatus === 'requesting'}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-all text-[11px] uppercase tracking-[0.2em] font-sans font-medium disabled:opacity-40"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/30'}`} />
+              {locationStatus === 'requesting' ? 'Locating...' : locationStatus === 'denied' ? 'Location Denied' : 'Sync Location'}
+            </button>
+          )}
+          {locationStatus === 'granted' && (
+            <div className="flex items-center gap-2 px-4 py-2 text-[11px] uppercase tracking-[0.2em] font-sans font-medium text-white/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+              Location Active
+            </div>
+          )}
         </div>
       </nav>
 
@@ -185,7 +213,7 @@ export default function App() {
                   <div className="flex items-center gap-8">
                     <div className="flex flex-col items-start gap-1">
                       <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Atmosphere:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Syncing..." speed={30} /> : `${weather?.temp}°F`}</span>
+                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Syncing..." speed={30} /> : weather?.temp != null ? `${Math.round(weather.temp)}°F` : '—'}</span>
                     </div>
                   </div>
                   <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
@@ -203,14 +231,14 @@ export default function App() {
                   <div className="flex items-center gap-8">
                     <div className="flex flex-col items-start gap-1">
                       <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Matrix:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Detecting..." speed={30} /> : weather?.condition}</span>
+                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Detecting..." speed={30} /> : weather?.condition ?? '—'}</span>
                     </div>
                   </div>
                   <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
                   <div className="flex items-center gap-8">
                     <div className="flex flex-col items-start gap-1">
                       <span className="text-scent-accent/20 text-[9px] font-bold tracking-[0.4em] font-sans uppercase">Saturation:</span>
-                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Measuring..." speed={30} /> : `${weather?.humidity}%`}</span>
+                      <span className="text-white text-3xl sm:text-5xl font-serif italic tracking-tighter">{weatherLoading ? <Typewriter text="Measuring..." speed={30} /> : weather?.humidity != null ? `${weather.humidity}%` : '—'}</span>
                     </div>
                   </div>
                   <span className="opacity-5 font-sans font-thin text-3xl select-none mx-4">/</span>
