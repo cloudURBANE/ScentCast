@@ -444,7 +444,7 @@ export default function App() {
 
       <div className="pt-24" />
 
-      <main className="pb-24 px-8 max-w-[1700px] mx-auto md:-mt-12 relative z-10">
+      <main className="pb-24 px-8 max-w-[1700px] mx-auto md:-mt-12 relative">
         <div className="space-y-40">
           <div className="w-full">
             <div className="flex flex-col items-center justify-center space-y-16 pt-32 text-center">
