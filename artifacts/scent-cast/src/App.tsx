@@ -129,27 +129,29 @@ export default function App() {
     <div className="min-h-screen bg-black selection:bg-scent-accent selection:text-black text-white relative overflow-x-hidden">
       <LavaBackground />
       <nav className="fixed top-0 left-0 right-0 h-24 border-b border-white/5 bg-black/40 backdrop-blur-2xl z-50 px-8">
-        <div className="max-w-[1400px] mx-auto h-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="max-w-[1400px] mx-auto h-full flex items-center relative">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
             <Wind size={24} strokeWidth={1} className="text-white" />
             <h1 className="font-serif text-2xl italic tracking-tighter uppercase">Scent Cast</h1>
           </div>
-          {locationStatus !== 'granted' && (
-            <button
-              onClick={requestLocation}
-              disabled={locationStatus === 'requesting'}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-all text-[11px] uppercase tracking-[0.2em] font-sans font-medium disabled:opacity-40"
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/30'}`} />
-              {locationStatus === 'requesting' ? 'Locating...' : locationStatus === 'denied' ? 'Location Denied' : 'Sync Location'}
-            </button>
-          )}
-          {locationStatus === 'granted' && (
-            <div className="flex items-center gap-2 px-4 py-2 text-[11px] uppercase tracking-[0.2em] font-sans font-medium text-white/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              Location Active
-            </div>
-          )}
+          <div className="ml-auto">
+            {locationStatus !== 'granted' && (
+              <button
+                onClick={requestLocation}
+                disabled={locationStatus === 'requesting'}
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-all text-[11px] uppercase tracking-[0.2em] font-sans font-medium disabled:opacity-40"
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${locationStatus === 'requesting' ? 'bg-yellow-400 animate-pulse' : locationStatus === 'denied' ? 'bg-red-400' : 'bg-white/30'}`} />
+                {locationStatus === 'requesting' ? 'Locating...' : locationStatus === 'denied' ? 'Location Denied' : 'Sync Location'}
+              </button>
+            )}
+            {locationStatus === 'granted' && (
+              <div className="flex items-center gap-2 px-4 py-2 text-[11px] uppercase tracking-[0.2em] font-sans font-medium text-white/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                Location Active
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
