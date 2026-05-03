@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "pnpm install --frozen-lockfile --ignore-scripts=false",
   "buildCommand": "pnpm run build",
   "outputDirectory": "artifacts/scent-cast/dist/public",
   "rewrites": [
