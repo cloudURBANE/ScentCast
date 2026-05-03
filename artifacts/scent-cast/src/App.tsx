@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { WeatherWidget } from './components/WeatherWidget';
 import { FragranceCapture } from './components/FragranceCapture';
 import { Wardrobe, Fragrance, DestinationType, EnergyState } from './components/Wardrobe';
 import { Wind, Play, X, LogOut } from 'lucide-react';
@@ -19,19 +18,6 @@ interface WeatherData {
   error?: string;
 }
 
-const Typewriter: React.FC<{ text: string; speed?: number }> = ({ text, speed = 40 }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      setDisplayedText(text.slice(0, i));
-      i++;
-      if (i > text.length) clearInterval(timer);
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed]);
-  return <span>{displayedText}</span>;
-};
 
 const LiveClock: React.FC = React.memo(() => {
   const [time, setTime] = useState(new Date());
@@ -514,10 +500,12 @@ export default function App() {
 
       <ScentIntentModal isOpen={isIntentModalOpen} onClose={() => setIsIntentModalOpen(false)} onComplete={handleIntentComplete} />
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {activeRecommendation && (
           <motion.div
+            key="recommendation-overlay"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeInOut' }}
             className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-3xl"
           >
             <div className="max-w-2xl w-full text-center space-y-12 p-8 sm:p-20 relative bg-black border border-white/10 shadow-2xl">
