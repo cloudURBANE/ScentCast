@@ -253,7 +253,10 @@ export const Wardrobe: React.FC<{
               className="relative w-full h-full sm:h-auto sm:max-h-[88dvh] sm:max-w-4xl sm:mx-6 bg-neutral-900 shadow-2xl sm:rounded-[2rem] overflow-hidden flex flex-col border-0 sm:border border-white/5"
             >
               {/* Pinned header — always visible */}
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0 border-b border-white/5">
+              <div
+                className="flex items-center justify-between px-5 pb-3 shrink-0 border-b border-white/5"
+                style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-scent-accent animate-pulse shrink-0" />
                   <p className="text-[9px] uppercase tracking-[0.4em] text-scent-accent font-bold truncate">Intelligence Profile</p>
@@ -343,7 +346,10 @@ export const Wardrobe: React.FC<{
               </div>
 
               {/* Pinned footer — actions always visible */}
-              <div className="px-5 pb-5 pt-3 shrink-0 border-t border-white/5 flex gap-3">
+              <div
+                className="px-5 pt-3 shrink-0 border-t border-white/5 flex gap-3"
+                style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+              >
                 <button className="flex-1 py-4 bg-white text-black uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 active:scale-[0.98] transition-all">
                   Initialize Synthesis
                 </button>

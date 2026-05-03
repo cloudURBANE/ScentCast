@@ -505,7 +505,10 @@ export default function App() {
             className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl flex flex-col"
           >
             {/* Pinned top bar — X always visible */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
+            <div
+              className="flex items-center justify-between px-5 pb-4 shrink-0"
+              style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+            >
               <p className="text-[9px] uppercase tracking-[0.4em] text-scent-accent font-bold">Strategic Alignment Found</p>
               <button onClick={() => setActiveRecommendation(null)} className="p-2 text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-95">
                 <X size={20} />
@@ -542,7 +545,10 @@ export default function App() {
             </div>
 
             {/* Pinned bottom — Confirm always visible */}
-            <div className="px-5 pb-5 pt-3 shrink-0 border-t border-white/5">
+            <div
+              className="px-5 pt-3 shrink-0 border-t border-white/5"
+              style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+            >
               <button onClick={() => setActiveRecommendation(null)} className="w-full py-4 bg-scent-accent text-black uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 transition-opacity active:scale-[0.98]">
                 Confirm Alignment
               </button>

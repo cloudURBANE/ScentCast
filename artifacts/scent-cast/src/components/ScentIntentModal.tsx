@@ -60,7 +60,10 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
         className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex flex-col"
       >
         {/* Pinned header — step indicator + X always visible */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0 border-b border-white/5">
+        <div
+          className="flex items-center justify-between px-5 pb-4 shrink-0 border-b border-white/5"
+          style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
+        >
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
             <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 font-bold">
@@ -197,7 +200,10 @@ export const ScentIntentModal: React.FC<ScentIntentModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Pinned footer — Back + Proceed always visible */}
-        <div className="px-5 pb-5 pt-3 shrink-0 border-t border-white/5 flex items-center justify-between">
+        <div
+          className="px-5 pt-3 shrink-0 border-t border-white/5 flex items-center justify-between"
+          style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+        >
           {step > 1 ? (
             <button
               type="button"
