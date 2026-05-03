@@ -176,6 +176,10 @@ export default function App() {
     }
   };
 
+  const handleUpdateImage = async (id: string, imageUrl: string) => {
+    setItems(prev => prev.map(item => item.id === id ? { ...item, imageUrl } : item));
+  };
+
   const handleDeleteItem = async (id: string) => {
     setItems((prev) => prev.filter(item => item.id !== id));
 
@@ -470,7 +474,7 @@ export default function App() {
           </div>
 
           <div className="pt-32 border-t border-white/5">
-            <Wardrobe items={items} onDelete={handleDeleteItem} featuredItem={activeRecommendation} />
+            <Wardrobe items={items} onDelete={handleDeleteItem} onUpdateImage={handleUpdateImage} featuredItem={activeRecommendation} />
           </div>
         </div>
       </main>

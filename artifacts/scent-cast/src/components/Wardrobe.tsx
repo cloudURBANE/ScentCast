@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trash2, ShieldCheck, Wind } from 'lucide-react';
+import { X, Trash2, ShieldCheck, Wind, Check, RefreshCw } from 'lucide-react';
 
 export interface ScentVector {
   freshness: number;
@@ -34,10 +34,49 @@ export interface Fragrance {
 export const Wardrobe: React.FC<{
   items: Fragrance[];
   onDelete: (id: string) => void;
+  onUpdateImage?: (id: string, imageUrl: string) => void;
   featuredItem?: Fragrance | null;
-}> = ({ items, onDelete, featuredItem }) => {
+}> = ({ items, onDelete, onUpdateImage, featuredItem }) => {
   const [selectedItem, setSelectedItem] = React.useState<Fragrance | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [clickCounts, setClickCounts] = React.useState<Record<string, number>>({});
+  const [refreshingId, setRefreshingId] = React.useState<string | null>(null);
+  const [refreshError, setRefreshError] = React.useState<string | null>(null);
+
+  const CLICK_THRESHOLD = 9;
+
+  const handleCardClick = (item: Fragrance) => {
+    const next = (clickCounts[item.id] ?? 0) + 1;
+    setClickCounts(prev => ({ ...prev, [item.id]: next }));
+    if (next < CLICK_THRESHOLD) setSelectedItem(item);
+  };
+
+  const handleDismissOverlay = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setClickCounts(prev => ({ ...prev, [id]: 0 }));
+    setRefreshError(null);
+  };
+
+  const handleRefreshImage = async (e: React.MouseEvent, item: Fragrance) => {
+    e.stopPropagation();
+    setRefreshingId(item.id);
+    setRefreshError(null);
+    try {
+      const res = await fetch('/api/refresh-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: item.name, brand: item.brand }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Refresh failed');
+      onUpdateImage?.(item.id, data.imageUrl);
+      setClickCounts(prev => ({ ...prev, [item.id]: 0 }));
+    } catch (err: any) {
+      setRefreshError(err.message || 'Image refresh failed');
+    } finally {
+      setRefreshingId(null);
+    }
+  };
 
   const filteredItems = items.filter(item => {
     if (!item?.name || !item?.brand) return false;
@@ -117,7 +156,7 @@ export const Wardrobe: React.FC<{
                     initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                     className="group cursor-pointer relative"
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => handleCardClick(item)}
                   >
                     <div className="glass-acrylic glass-acrylic-animate rounded-scent transition-all duration-700 group-hover:-translate-y-4 group-hover:shadow-[0_30px_70px_rgba(255,255,255,0.1)] relative overflow-hidden">
                       <div className="aspect-[3/4] p-10 flex flex-col items-center justify-center relative">
@@ -129,6 +168,57 @@ export const Wardrobe: React.FC<{
                           <p className="text-[9px] uppercase tracking-widest text-white/60 mb-1 leading-tight">{item.brand}</p>
                           <h4 className="font-serif italic text-lg text-white leading-tight">{item.name}</h4>
                         </div>
+
+                        {/* Image quality overlay — appears after 9 clicks */}
+                        <AnimatePresence>
+                          {(clickCounts[item.id] ?? 0) >= CLICK_THRESHOLD && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              onClick={e => e.stopPropagation()}
+                              className="absolute inset-0 z-20 bg-black/92 backdrop-blur-md flex flex-col items-center justify-center gap-5 p-6"
+                            >
+                              {/* Check badge */}
+                              <div className="w-10 h-10 border border-white/20 flex items-center justify-center">
+                                <Check size={18} className="text-white" />
+                              </div>
+
+                              <div className="text-center space-y-1">
+                                <p className="text-[9px] uppercase tracking-[0.4em] text-white/40 font-bold">Image Control</p>
+                                <p className="font-serif italic text-white text-sm leading-tight">{item.name}</p>
+                              </div>
+
+                              {refreshError && refreshingId === null && (
+                                <p className="text-[9px] text-red-400/80 text-center leading-snug px-2">{refreshError}</p>
+                              )}
+
+                              {/* Primary: Refresh Image */}
+                              <button
+                                type="button"
+                                onClick={e => handleRefreshImage(e, item)}
+                                disabled={refreshingId === item.id}
+                                className="w-full py-3 bg-white text-black text-[9px] uppercase tracking-[0.35em] font-bold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-white/90 active:scale-[0.97] transition-all"
+                              >
+                                {refreshingId === item.id
+                                  ? <><RefreshCw size={11} className="animate-spin" /> Searching...</>
+                                  : <><RefreshCw size={11} /> Refresh Image</>
+                                }
+                              </button>
+
+                              {/* Secondary: Dismiss */}
+                              <button
+                                type="button"
+                                onClick={e => handleDismissOverlay(e, item.id)}
+                                disabled={refreshingId === item.id}
+                                className="text-[9px] uppercase tracking-[0.3em] text-white/30 hover:text-white transition-colors disabled:opacity-30"
+                              >
+                                Dismiss
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                     <div className="text-center mt-6 space-y-1 transition-opacity duration-500 group-hover:opacity-30">

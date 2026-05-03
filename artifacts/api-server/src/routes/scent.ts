@@ -3,6 +3,8 @@ import { getWeather } from "../services/weatherService";
 import { buildProfile, searchFragrances } from "../services/scentEngine";
 import { deepScrapeFragrance } from "../services/fallbackIntelligence";
 import { searchCatalog, getCatalogEntry, saveCatalogEntry, flattenProfile } from "../services/catalogService";
+import { searchImageUrl } from "../services/imageService";
+import { removeBg } from "../services/bgService";
 import { ai } from "@workspace/integrations-gemini-ai";
 
 const router = Router();
@@ -236,6 +238,35 @@ Only return valid JSON, no markdown or extra text.`
   );
 
   res.json(enriched);
+});
+
+router.post("/refresh-image", async (req, res) => {
+  const { name, brand } = req.body as { name?: string; brand?: string };
+  if (!name || !brand) {
+    res.status(400).json({ error: "name and brand are required" });
+    return;
+  }
+  try {
+    // Bypass all caches — force a fresh image search
+    const query = `${brand} ${name} single fragrance bottle no box HQ official product photo transparent background`;
+    const rawUrl = await searchImageUrl(query);
+    if (!rawUrl) {
+      res.status(404).json({ error: "No image found for this fragrance" });
+      return;
+    }
+    const { cleanImage } = await removeBg(rawUrl, true);
+    const finalImageUrl = cleanImage ?? rawUrl;
+
+    // Persist to global catalog so every future user gets the refreshed image
+    const existing = await getCatalogEntry(brand, name);
+    if (existing) {
+      await saveCatalogEntry(brand, name, { ...existing, imageUrl: finalImageUrl });
+    }
+    res.json({ imageUrl: finalImageUrl });
+  } catch (err: any) {
+    req.log.error(err, "refresh-image failed");
+    res.status(500).json({ error: "Image refresh failed" });
+  }
 });
 
 export default router;
