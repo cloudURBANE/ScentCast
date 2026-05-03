@@ -555,7 +555,16 @@ export default function App() {
           <AtmosphereBar weather={weather} weatherLoading={weatherLoading} />
 
           <div className="pt-32 border-t border-white/5">
-            <Wardrobe items={items} onDelete={handleDeleteItem} onUpdateImage={handleUpdateImage} featuredItem={activeRecommendation} />
+            <Wardrobe
+              items={items}
+              onDelete={handleDeleteItem}
+              onUpdateImage={handleUpdateImage}
+              onSynthesized={(id, updated) => {
+                setItems(prev => prev.map(item => item.id === id ? updated : item));
+              }}
+              featuredItem={activeRecommendation}
+              authToken={authToken}
+            />
           </div>
         </div>
       </main>
