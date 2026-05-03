@@ -140,6 +140,8 @@ export default function App() {
       no_code: "Google sign-in was cancelled.",
       token_exchange:
         "Google sign-in failed. In Google Cloud Console, set Authorized redirect URI to: your API_PUBLIC_URL + /api/auth/google/callback (e.g. http://localhost:8080/api/auth/google/callback).",
+      missing_api_origin:
+        "Frontend is missing VITE_API_ORIGIN on Vercel. Set it to your API URL (e.g. https://scentcast.onrender.com), then redeploy the site.",
       user_info: "Could not load your Google profile.",
       missing_email: "Google did not provide an email.",
       server_error: "Sign-in failed on the server.",

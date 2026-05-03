@@ -5,12 +5,27 @@ import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
+/**
+ * Google requires redirect_uri exactly `{origin}/api/auth/google/callback`.
+ * Env is often pasted as the full callback URL — normalize to scheme + host only.
+ */
+function apiPublicOriginFromEnv(raw: string): string {
+  const t = raw.trim().replace(/\/+$/, "");
+  if (!t) return "";
+  try {
+    const withScheme = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+    return new URL(withScheme).origin;
+  } catch {
+    return t.replace(/\/+$/, "");
+  }
+}
+
 /** Public origin of this API (used for Google OAuth redirect_uri). */
 function getApiPublicUrl(req: import("express").Request): string {
   const explicit =
     process.env.API_PUBLIC_URL?.trim() || process.env.OAUTH_REDIRECT_ORIGIN?.trim();
   if (explicit) {
-    return explicit.replace(/\/+$/, "");
+    return apiPublicOriginFromEnv(explicit);
   }
   const domains = process.env.REPLIT_DOMAINS;
   if (domains) {

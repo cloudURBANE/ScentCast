@@ -20,9 +20,21 @@ const oauthOrigin =
     ? import.meta.env.VITE_OAUTH_ORIGIN.trim().replace(/\/+$/, "")
     : "");
 
-/** Full URL for Google OAuth start — must stay on API host (8080 locally) to match Authorized redirect URIs in Google Cloud. */
+/**
+ * Full URL for Google OAuth start — must hit the API host so redirect_uri matches Google Cloud.
+ *
+ * Split deploy (Vercel UI + Render API): set **VITE_API_ORIGIN** (or VITE_OAUTH_ORIGIN) at **build**
+ * to your API origin (e.g. https://xxx.onrender.com). If missing in production builds, `/api/auth/google`
+ * would wrongly resolve against the frontend host (OAuth never reaches the API).
+ */
 export function googleOAuthAuthorizeUrl(): string {
   if (oauthOrigin) return `${oauthOrigin}/api/auth/google`;
   if (import.meta.env.DEV) return "http://localhost:8080/api/auth/google";
+  if (import.meta.env.PROD) {
+    console.error(
+      "VITE_API_ORIGIN (or VITE_OAUTH_ORIGIN) is not set. Add it on Vercel (Production env) and redeploy.",
+    );
+    return `${import.meta.env.BASE_URL}?oauth_error=missing_api_origin`;
+  }
   return apiUrl("/api/auth/google");
 }
