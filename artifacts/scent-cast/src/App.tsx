@@ -502,41 +502,50 @@ export default function App() {
             key="recommendation-overlay"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[110] overflow-hidden bg-black/95 backdrop-blur-3xl"
+            className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl flex flex-col"
           >
+            {/* Pinned top bar — X always visible */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
+              <p className="text-[9px] uppercase tracking-[0.4em] text-scent-accent font-bold">Strategic Alignment Found</p>
+              <button onClick={() => setActiveRecommendation(null)} className="p-2 text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-95">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable middle */}
             <div
-              className="absolute inset-0 overflow-y-scroll"
+              className="flex-1 overflow-y-auto"
               style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
             >
-            <div className="min-h-full flex items-start sm:items-center justify-center p-4 py-6 sm:p-8">
-              <div className="max-w-2xl w-full text-center space-y-6 sm:space-y-12 p-5 sm:p-16 relative bg-black border border-white/10 shadow-2xl">
-                <button onClick={() => setActiveRecommendation(null)} className="absolute top-4 right-4 sm:top-8 sm:right-8 p-2 text-white/40 hover:text-white hover:bg-white/10 transition-all z-10">
-                  <X size={20} />
-                </button>
-                <header className="pt-4 sm:pt-0">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-scent-accent font-bold mb-4">Strategic Alignment Found</p>
-                  <h2 className="font-serif italic text-2xl sm:text-6xl mb-4">You should wear</h2>
-                  <div className="h-1 w-16 bg-scent-accent mx-auto" />
-                </header>
-                <div className="py-8 sm:py-16 border-y border-white/10 group cursor-pointer" onClick={() => setActiveRecommendation(null)}>
-                  <p className="text-base uppercase tracking-[0.2em] text-white/40 mb-3 font-serif">{activeRecommendation.brand}</p>
-                  <h3 className="font-serif italic text-3xl sm:text-8xl transition-transform group-hover:scale-105 text-white leading-tight">{activeRecommendation.name}</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-12 text-left">
-                  <div>
-                    <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted mb-3 font-bold">Olfactory Reason</p>
-                    <p className="text-sm italic text-scent-muted leading-relaxed">{recommendationReason || 'Optimal olfactory alignment with your current atmospheric conditions.'}</p>
+              <div className="flex items-center justify-center min-h-full px-5 py-6 sm:px-16 sm:py-12">
+                <div className="max-w-2xl w-full text-center space-y-6 sm:space-y-12">
+                  <header>
+                    <h2 className="font-serif italic text-2xl sm:text-6xl mb-4">You should wear</h2>
+                    <div className="h-px w-16 bg-white/20 mx-auto" />
+                  </header>
+                  <div className="py-6 sm:py-16 border-y border-white/10 group cursor-pointer" onClick={() => setActiveRecommendation(null)}>
+                    <p className="text-sm uppercase tracking-[0.2em] text-white/40 mb-2 font-serif">{activeRecommendation.brand}</p>
+                    <h3 className="font-serif italic text-3xl sm:text-8xl text-white leading-tight transition-transform group-hover:scale-105">{activeRecommendation.name}</h3>
                   </div>
-                  <div>
-                    <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted mb-3 font-bold">Concentration</p>
-                    <p className="text-sm italic text-scent-muted leading-relaxed">{activeRecommendation.concentration || 'Eau de Parfum'}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-12 text-left">
+                    <div>
+                      <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted mb-2 font-bold">Olfactory Reason</p>
+                      <p className="text-sm italic text-scent-muted leading-relaxed">{recommendationReason || 'Optimal olfactory alignment with your current atmospheric conditions.'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[8px] uppercase tracking-[0.3em] text-scent-muted mb-2 font-bold">Concentration</p>
+                      <p className="text-sm italic text-scent-muted leading-relaxed">{activeRecommendation.concentration || 'Eau de Parfum'}</p>
+                    </div>
                   </div>
                 </div>
-                <button onClick={() => setActiveRecommendation(null)} className="w-full py-4 sm:py-5 bg-scent-accent text-black uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 transition-opacity active:scale-[0.98]">
-                  Confirm Alignment
-                </button>
               </div>
             </div>
+
+            {/* Pinned bottom — Confirm always visible */}
+            <div className="px-5 pb-5 pt-3 shrink-0 border-t border-white/5">
+              <button onClick={() => setActiveRecommendation(null)} className="w-full py-4 bg-scent-accent text-black uppercase tracking-[0.3em] text-[10px] font-bold hover:opacity-90 transition-opacity active:scale-[0.98]">
+                Confirm Alignment
+              </button>
             </div>
           </motion.div>
         )}
