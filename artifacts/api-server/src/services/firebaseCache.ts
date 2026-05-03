@@ -1,0 +1,70 @@
+import { createHash } from "crypto";
+
+let firestoreDb: FirebaseFirestore.Firestore | null = null;
+let initAttempted = false;
+
+function cacheKey(imageUrl: string): string {
+  return createHash("sha256").update(imageUrl.trim()).digest("hex");
+}
+
+function getDb(): FirebaseFirestore.Firestore | null {
+  if (initAttempted) return firestoreDb;
+  initAttempted = true;
+
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (!projectId || !clientEmail || !privateKey) {
+    return null;
+  }
+
+  try {
+    const admin = require("firebase-admin");
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey: privateKey.replace(/\\n/g, "\n"),
+        }),
+      });
+    }
+    firestoreDb = admin.firestore();
+    return firestoreDb;
+  } catch (err) {
+    console.error("[firebaseCache] init failed:", err);
+    return null;
+  }
+}
+
+export async function getCachedImage(imageUrl: string): Promise<string | null> {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const key = cacheKey(imageUrl);
+    const doc = await db.collection("bg_cache").doc(key).get();
+    if (doc.exists) {
+      const data = doc.data();
+      return data?.cleanImage ?? null;
+    }
+  } catch (err) {
+    console.error("[firebaseCache] read error:", err);
+  }
+  return null;
+}
+
+export async function setCachedImage(imageUrl: string, cleanImage: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  try {
+    const key = cacheKey(imageUrl);
+    await db.collection("bg_cache").doc(key).set({
+      cleanImage,
+      sourceUrl: imageUrl,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[firebaseCache] write error:", err);
+  }
+}

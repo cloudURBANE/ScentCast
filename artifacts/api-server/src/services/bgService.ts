@@ -1,5 +1,6 @@
 import axios from "axios";
 import sharp from "sharp";
+import { getCachedImage, setCachedImage } from "./firebaseCache";
 
 const REMOVEBG_API = "https://api.remove.bg/v1.0/removebg";
 
@@ -119,7 +120,7 @@ export async function removeBg(input: string, isUrl = false) {
   const apiKey = process.env.REMOVE_BG_API_KEY;
   const toDataUri = (buf: Buffer) => `data:image/png;base64,${buf.toString("base64")}`;
 
-  // --- Handle base64 / data URI inputs ---
+  // --- Handle base64 / data URI inputs (never cached — no stable key) ---
   if (!isUrl || input.startsWith("data:")) {
     const b64 = input.startsWith("data:") ? input.split(",")[1] : null;
     if (!b64) return { cleanImage: input };
@@ -129,19 +130,24 @@ export async function removeBg(input: string, isUrl = false) {
       return { cleanImage: toDataUri(normalized) };
     }
 
-    // Use image_file_b64 directly per the docs
     const result = await removeBgByBase64(b64, apiKey);
     if (result) {
       const padded = await padAndCenter(result);
       return { cleanImage: toDataUri(padded) };
     }
 
-    // Fallback: local normalize
     const normalized = await trimWhiteAndNormalize(Buffer.from(b64, "base64"));
     return { cleanImage: toDataUri(normalized) };
   }
 
   // --- Handle http/https URL inputs ---
+
+  // Check Firebase cache first — skip the API entirely if we have a stored result
+  const cached = await getCachedImage(input);
+  if (cached) {
+    return { cleanImage: cached };
+  }
+
   if (!apiKey) {
     const raw = await downloadImage(input);
     if (raw) {
@@ -151,11 +157,13 @@ export async function removeBg(input: string, isUrl = false) {
     return { cleanImage: input };
   }
 
-  // Strategy 1: send the URL directly to remove.bg (cheapest, works when CDN is public)
+  // Strategy 1: send the URL directly to remove.bg
   const byUrl = await removeBgByUrl(input, apiKey);
   if (byUrl) {
     const padded = await padAndCenter(byUrl);
-    return { cleanImage: toDataUri(padded) };
+    const dataUri = toDataUri(padded);
+    await setCachedImage(input, dataUri);
+    return { cleanImage: dataUri };
   }
 
   // Strategy 2: download ourselves, send as binary file
@@ -165,10 +173,12 @@ export async function removeBg(input: string, isUrl = false) {
   const byFile = await removeBgByFile(raw, apiKey);
   if (byFile) {
     const padded = await padAndCenter(byFile);
-    return { cleanImage: toDataUri(padded) };
+    const dataUri = toDataUri(padded);
+    await setCachedImage(input, dataUri);
+    return { cleanImage: dataUri };
   }
 
-  // Strategy 3: local white-trim normalization as last resort
+  // Strategy 3: local white-trim normalization as last resort (not cached — no API credit spent)
   const normalized = await trimWhiteAndNormalize(raw);
   return { cleanImage: toDataUri(normalized) };
 }
